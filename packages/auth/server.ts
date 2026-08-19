@@ -22,11 +22,13 @@ export const auth = betterAuth({
   baseURL:
     Resource.App.stage === "local"
       ? `http://localhost:${ports.app}`
-      : `https://api.${domain}`,
+      : `https://${Resource.App.stage}.api.${domain}`,
   secret: Resource.BETTER_AUTH_SECRET.value,
   trustedOrigins: [
     `http://localhost:${ports.app}`,
     `http://localhost:${ports.mastraStudio}`,
+    `https://api.${domain}`,
+    `https://${Resource.App.stage}.api.${domain}`,
   ],
   advanced: {
     cookiePrefix:

@@ -1,18 +1,22 @@
-import { createRouter } from "@/lib/create-router"
 import { cors } from "hono/cors"
 import { logger } from "hono/logger"
 import { requestId } from "hono/request-id"
-import { domain } from "@repo/infra/domain"
-import { ports } from "@repo/infra/ports"
-import { Resource } from "sst"
 import { HTTPException } from "hono/http-exception"
+import { Resource } from "sst"
+import { domain } from "@repo/infra/domain"
+import { createRouter } from "@/lib/create-router"
+import { ports } from "@repo/infra/ports"
 
 export async function createApp() {
   const app = createRouter()
 
   app.use(
     cors({
-      origin: [`http://localhost:${ports.app}`],
+      origin: [
+        `http://localhost:${ports.app}`,
+        `https://${Resource.App.stage}.${domain}`,
+        `https://${Resource.App.stage}.api.${domain}`,
+      ],
       credentials: true,
     })
   )

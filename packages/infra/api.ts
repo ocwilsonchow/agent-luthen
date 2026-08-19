@@ -14,7 +14,13 @@ export const api = new sst.aws.Service("API", {
     PORT: String(ports.api),
   },
   loadBalancer: {
-    rules: [{ listen: "80/http", forward: `${ports.api}/http` }],
+    rules:
+      $app.stage === "local"
+        ? [{ listen: "80/http", forward: `${ports.api}/http` }]
+        : [
+            { listen: "80/http", redirect: "443/https" },
+            { listen: "443/https", forward: `${ports.api}/http` },
+          ],
     health: {
       [`${ports.api}/http`]: {
         path: "/api/health",
