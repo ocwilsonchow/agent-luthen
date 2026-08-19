@@ -1,6 +1,6 @@
 import { Mastra } from "@mastra/core/mastra"
 import { MastraCompositeStore } from "@mastra/core/storage"
-import { Observability, SensitiveDataFilter } from "@mastra/observability"
+import { Observability } from "@mastra/observability"
 import { agent } from "./agents/agent"
 import { LangfuseExporter } from "@mastra/langfuse"
 import { Resource } from "sst"

@@ -120,6 +120,7 @@
         "@mastra/duckdb": "latest",
         "@mastra/langfuse": "^1.4.9",
         "@mastra/libsql": "latest",
+        "@mastra/loggers": "^1.2.0",
         "@mastra/memory": "latest",
         "@mastra/observability": "latest",
         "@mastra/pg": "^1.21.0",

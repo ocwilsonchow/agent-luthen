@@ -9,7 +9,6 @@ declare module "sst" {
     "API": {
       "service": string
       "type": "sst.aws.Service"
-      "url": string
     }
     "BETTER_AUTH_SECRET": {
       "type": "sst.sst.Secret"

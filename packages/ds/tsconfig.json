@@ -27,6 +27,6 @@
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false
   },
-  "include": ["sst-env.d.ts"],
+  "include": ["*.ts", "sst-env.d.ts"],
   "exclude": ["node_modules"]
 }
