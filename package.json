@@ -12,8 +12,9 @@
     "db:migrate": "bunx sst shell --stage local -- bun run --filter @repo/db db:migrate",
     "db:push": "bunx sst shell --stage local -- bun run --filter @repo/db db:push",
     "db:studio": "bunx sst shell --stage local -- bun run --filter @repo/db db:studio",
+    "setup:schema": "bun run auth:generate && bun run db:generate && bun run db:migrate && bun run db:push",
     "dev": "bunx sst dev --stage local",
-    "setup:schema": "bun run auth:generate && bun run db:generate && bun run db:migrate && bun run db:push"
+    "deploy:dev": "bunx sst deploy --stage dev"
   },
   "devDependencies": {
     "@types/aws-lambda": "8.10.162",
