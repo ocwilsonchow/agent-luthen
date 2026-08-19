@@ -1,6 +1,6 @@
 import { cluster } from "@repo/infra/cluster"
 import { ports } from "@repo/infra/ports"
-import { betterAuthSecret, databaseUrl } from "./secrets"
+import { betterAuthSecret, databaseUrl, pineconeApiKey, tavilyApiKey } from "./secrets"
 import { domain } from "./domain"
 
 export const api = new sst.aws.Service("API", {
@@ -9,7 +9,7 @@ export const api = new sst.aws.Service("API", {
     context: ".",
     dockerfile: "apps/api/Dockerfile",
   },
-  link: [databaseUrl, betterAuthSecret],
+  link: [databaseUrl, betterAuthSecret, pineconeApiKey, tavilyApiKey],
   environment: {
     PORT: String(ports.api),
   },

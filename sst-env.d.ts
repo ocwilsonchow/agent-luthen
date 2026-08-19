@@ -19,9 +19,13 @@ declare module "sst" {
       "type": "sst.sst.Secret"
       "value": string
     }
-    "Router": {
-      "type": "sst.aws.Router"
-      "url": string
+    "PINECONE_API_KEY": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+    "TAVILY_API_KEY": {
+      "type": "sst.sst.Secret"
+      "value": string
     }
     "Vpc": {
       "type": "sst.aws.Vpc"
