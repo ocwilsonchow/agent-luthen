@@ -13,6 +13,11 @@ import {
 } from "better-auth/plugins"
 import { Resource } from "sst"
 
+export type AuthType = {
+  user: typeof auth.$Infer.Session.user | null
+  session: typeof auth.$Infer.Session.session | null
+}
+
 export const auth = betterAuth({
   baseURL:
     Resource.App.stage === "local"
