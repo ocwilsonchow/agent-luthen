@@ -21,7 +21,7 @@ export type AuthType = {
 export const auth = betterAuth({
   baseURL:
     Resource.App.stage === "local"
-      ? `http://localhost:${ports.app}`
+      ? `http://localhost:${ports.api}`
       : `https://${Resource.App.stage}.api.${domain}`,
   secret: Resource.BETTER_AUTH_SECRET.value,
   trustedOrigins: [
@@ -30,6 +30,7 @@ export const auth = betterAuth({
     `https://api.${domain}`,
     `https://${Resource.App.stage}.api.${domain}`,
   ],
+  session: { deferSessionRefresh: true },
   advanced: {
     cookiePrefix:
       Resource.App.stage === "local"
