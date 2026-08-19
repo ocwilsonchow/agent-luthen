@@ -1,0 +1,25 @@
+{
+  "name": "@repo/auth",
+  "private": true,
+  "type": "module",
+  "module": "index.ts",
+  "scripts": {
+    "auth:generate": "bun x auth@latest generate --config ./src/server.ts --output ../db/schema/auth.ts -y"
+  },
+  "dependencies": {
+    "@better-auth/api-key": "^1.7.0",
+    "@better-auth/drizzle-adapter": "^1.7.0",
+    "@better-auth/oauth-provider": "^1.7.0",
+    "@repo/db": "workspace:*",
+    "@repo/infra": "workspace:*",
+    "better-auth": "^1.7.0",
+    "pg": "^8.23.0",
+    "postgres": "^3.4.9"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}
