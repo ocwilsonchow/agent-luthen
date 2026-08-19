@@ -6,8 +6,17 @@ import { LangfuseExporter } from "@mastra/langfuse"
 import { Resource } from "sst"
 import { PinoLogger } from "@mastra/loggers"
 import { PostgresStore } from "@mastra/pg"
+import { MastraAuthBetterAuth } from "./auth"
+import { auth as authServer } from "@repo/auth/server"
 
 export const mastra = new Mastra({
+  server: {
+    auth: new MastraAuthBetterAuth({
+      auth: authServer,
+      mapUserToResourceId: (authUser) => authUser.user.id,
+      public: ["/api/mastra/openapi.json"],
+    }),
+  },
   agents: { agent },
   storage: new MastraCompositeStore({
     id: "composite-storage",

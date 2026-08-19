@@ -1,12 +1,15 @@
 {
-  "name": "mastra",
+  "name": "@repo/mastra",
   "version": "1.0.0",
   "description": "A general-purpose Mastra agent with a local workspace, shell tools, memory, task tracking, web access, and recurring schedules.",
-  "main": "index.js",
   "private": true,
+  "exports": {
+    ".": "./src/mastra/index.ts"
+  },
   "scripts": {
     "dev": "mastra dev",
-    "build": "mastra build",
+    "build": "node -e \"process.exit(0)\"",
+    "build:mastra": "mastra build",
     "start": "mastra start"
   },
   "keywords": [],
@@ -17,6 +20,7 @@
     "node": ">=22.13.0"
   },
   "dependencies": {
+    "@mastra/auth-better-auth": "^1.1.4",
     "@mastra/core": "latest",
     "@mastra/duckdb": "latest",
     "@mastra/langfuse": "^1.4.9",
@@ -24,6 +28,7 @@
     "@mastra/memory": "latest",
     "@mastra/observability": "latest",
     "@mastra/pg": "^1.21.0",
+    "@repo/auth": "workspace:*",
     "zod": "^4.4.3"
   },
   "devDependencies": {

@@ -1,5 +1,6 @@
 {
   "name": "agent-luthen",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "build": "turbo run build",
@@ -29,7 +30,8 @@
   "devEngines": {
     "packageManager": {
       "name": "bun",
-      "version": "1.3.14"
+      "version": "1.3.14",
+      "onFail": "ignore"
     }
   },
   "workspaces": [
@@ -39,5 +41,9 @@
   "dependencies": {
     "@repo/infra": "workspace:*",
     "sst": "4.17.1"
+  },
+  "overrides": {
+    "better-auth": "1.7.1",
+    "@better-auth/core": "1.7.1"
   }
 }
