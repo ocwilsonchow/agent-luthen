@@ -4,7 +4,7 @@
   "type": "module",
   "module": "index.ts",
   "scripts": {
-    "auth:generate": "bun x auth@latest generate --config ./src/server.ts --output ../db/schema/auth.ts -y"
+    "auth:generate": "bun x auth@latest generate --config ./server.ts --output ../db/schema/auth.ts -y"
   },
   "dependencies": {
     "@better-auth/api-key": "^1.7.0",
