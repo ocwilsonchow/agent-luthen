@@ -14,7 +14,8 @@
     "db:studio": "bunx sst shell --stage local -- bun run --filter @repo/db db:studio",
     "setup:schema": "bun run auth:generate && bun run db:generate && bun run db:migrate && bun run db:push",
     "dev": "bunx sst dev --stage local",
-    "deploy:dev": "bunx sst deploy --stage dev"
+    "deploy:dev": "bunx sst deploy --stage dev",
+    "killports": "bash scripts/kill-ports.sh"
   },
   "devDependencies": {
     "@types/aws-lambda": "8.10.162",
