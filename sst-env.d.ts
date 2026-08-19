@@ -19,6 +19,18 @@ declare module "sst" {
       "type": "sst.sst.Secret"
       "value": string
     }
+    "LANGFUSE_BASE_URL": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+    "LANGFUSE_PUBLIC_KEY": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+    "LANGFUSE_SECRET_KEY": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
     "PINECONE_API_KEY": {
       "type": "sst.sst.Secret"
       "value": string

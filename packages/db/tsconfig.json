@@ -23,5 +23,7 @@
     "paths": {
       "@/*": ["./*"]
     }
-  }
+  },
+  "include": ["sst-env.d.ts"],
+  "exclude": ["node_modules"]
 }
