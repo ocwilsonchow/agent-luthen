@@ -3,9 +3,9 @@
   "private": true,
   "type": "module",
   "exports": {
-    "server": "./server.ts",
-    "client": "./client.ts",
-    "cookie": "./cookie.ts"
+    "./server": "./server.ts",
+    "./client": "./client.ts",
+    "./cookie": "./cookie.ts"
   },
   "scripts": {
     "auth:generate": "bun x auth@latest generate --config ./server.ts --output ../db/schema/auth.ts -y"
