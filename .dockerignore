@@ -1,0 +1,10 @@
+node_modules
+.git
+.sst
+.turbo
+**/.next
+**/dist
+out
+.env*
+*.log
+.DS_Store
