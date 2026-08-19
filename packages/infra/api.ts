@@ -1,6 +1,7 @@
 import { cluster } from "@repo/infra/cluster"
 import { ports } from "@repo/infra/ports"
 import { betterAuthSecret, databaseUrl } from "./secrets"
+import { domain } from "./domain"
 
 export const api = new sst.aws.Service("API", {
   cluster,
@@ -19,6 +20,7 @@ export const api = new sst.aws.Service("API", {
         path: "/api/health",
       },
     },
+    domain: $app.stage === "local" ? undefined : `${$app.stage}.api.${domain}`,
   },
   capacity: "spot",
   dev: {

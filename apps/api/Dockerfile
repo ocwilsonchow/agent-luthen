@@ -14,6 +14,8 @@ COPY --from=prepare /app/out/json/ .
 RUN bun install
 # Build the project and its dependencies
 COPY --from=prepare /app/out/full/ .
+# turbo prune omits the repo-root SST types file referenced by package shims
+COPY --from=prepare /app/sst-env.d.ts ./sst-env.d.ts
 
 # Uncomment and use build args to enable remote caching
 # ARG TURBO_TEAM

@@ -19,6 +19,10 @@ declare module "sst" {
       "type": "sst.sst.Secret"
       "value": string
     }
+    "Router": {
+      "type": "sst.aws.Router"
+      "url": string
+    }
     "Vpc": {
       "type": "sst.aws.Vpc"
     }
