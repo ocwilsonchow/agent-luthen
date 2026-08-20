@@ -1,6 +1,7 @@
 import { cluster } from "@repo/infra/cluster"
 import { ports } from "@repo/infra/ports"
 import {
+  aiGatewayApiKey,
   betterAuthSecret,
   databaseUrl,
   langfuseBaseUrl,
@@ -25,6 +26,7 @@ export const api = new sst.aws.Service("API", {
     langfuseSecretKey,
     langfusePublicKey,
     langfuseBaseUrl,
+    aiGatewayApiKey,
   ],
   environment: {
     PORT: String(ports.api),

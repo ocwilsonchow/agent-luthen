@@ -2,6 +2,16 @@
   "name": "@repo/infra",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
+  "exports": {
+    "./api": "./api.ts",
+    "./cluster": "./cluster.ts",
+    "./domain": "./domain.ts",
+    "./ports": "./ports.ts",
+    "./router": "./router.ts",
+    "./secrets": "./secrets.ts",
+    "./vpc": "./vpc.ts"
+  },
   "devDependencies": {
     "@types/bun": "latest"
   },
