@@ -15,7 +15,7 @@ export const createVercelModelConfig = (
 type ModelType = "base" | "observation" | "tool"
 
 export const vercelModels = {
-  base: createVercelModelConfig(gateway("xai/grok-4.6").modelId),
+  base: createVercelModelConfig(gateway("alibaba/qwen3.8-max").modelId),
   observation: createVercelModelConfig(
     gateway("openai/gpt-5.4-mini").modelId
   ),

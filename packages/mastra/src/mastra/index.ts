@@ -1,7 +1,10 @@
 import { Mastra } from "@mastra/core/mastra"
 import { MastraCompositeStore } from "@mastra/core/storage"
 import { Observability } from "@mastra/observability"
-import { eventedClinicalResearchAgent } from "./agents/research/agent"
+import {
+  durableClinicalResearchAgent,
+  eventedClinicalResearchAgent,
+} from "./agents/research/agent"
 import { tavilyExtractTool, tavilySearchTool } from "./tools/tavily-tools"
 import { LangfuseExporter } from "@mastra/langfuse"
 import { Resource } from "sst"
@@ -23,7 +26,7 @@ export const mastra = new Mastra({
       public: ["/api/mastra/openapi.json"],
     }),
   },
-  agents: { eventedClinicalResearchAgent },
+  agents: { durableClinicalResearchAgent },
   tools: { tavilySearchTool, tavilyExtractTool },
   storage: new MastraCompositeStore({
     id: "composite-storage",

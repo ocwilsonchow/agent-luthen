@@ -25,9 +25,9 @@ export const clinicalResearchAgent = new Agent({
   memory: new Memory({
     options: {
       generateTitle: true,
-      observationalMemory: {
-        model: vercelModels.observation,
-      },
+      // observationalMemory: {
+      //   model: vercelModels.observation,
+      // },
     },
   }),
   tools: { tavilySearchTool, tavilyExtractTool },
