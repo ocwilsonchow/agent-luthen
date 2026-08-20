@@ -6,16 +6,31 @@
 
 declare module "sst" {
   export interface Resource {
+    "AI_GATEWAY_API_KEY": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
     "API": {
       "service": string
       "type": "sst.aws.Service"
-      "url": string
     }
     "BETTER_AUTH_SECRET": {
       "type": "sst.sst.Secret"
       "value": string
     }
     "DATABASE_URL": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+    "LANGFUSE_BASE_URL": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+    "LANGFUSE_PUBLIC_KEY": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+    "LANGFUSE_SECRET_KEY": {
       "type": "sst.sst.Secret"
       "value": string
     }

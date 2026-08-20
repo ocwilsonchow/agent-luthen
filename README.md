@@ -1,159 +1,137 @@
-# Turborepo starter
+# agent-luthen
 
-This Turborepo starter is maintained by the Turborepo core team.
+A monorepo that deploys a Hono API (SST) integrating:
 
-## Using this example
+- Better Auth (`/api/auth/*`) for session/auth handling
+- Mastra (`/api/mastra/*`) for an LLM agent runtime
+- OpenAPI + Scalar for API documentation
 
-Run the following command:
+## How it works (architecture)
 
-```sh
-npx create-turbo@latest
+```mermaid
+flowchart LR
+  Client[Client / Browser] -->|HTTP| Api[SST Hono API (apps/api)]
+  Api --> Health[Health route (/api/health)]
+  Api --> Auth[Better Auth handlers (/api/auth/*)]
+  Api --> Mastra[MastraServer (/api/mastra/*)]
+  Api --> Docs[OpenAPI + Scalar (/doc, /reference)]
+
+  Mastra --> Postgres[(Postgres via SST DATABASE_URL)]
+  Mastra --> Langfuse[(Langfuse via SST LANGFUSE_* secrets)]
 ```
 
-## What's inside?
+### API entrypoint and wiring
 
-This Turborepo includes the following packages/apps:
+The API server is implemented in `apps/api`:
 
-### Apps and Packages
+- `apps/api/src/index.ts` starts the Hono server.
+- `apps/api/src/app.ts` mounts routes under `/api` and wires:
+  - health route
+  - Better Auth endpoints
+  - Mastra endpoints
+  - OpenAPI/Scalar docs endpoints
+- Mastra is configured in `apps/api/src/lib/configure-mastra.ts`:
+  - prefix: `/api/mastra`
+  - Mastra OpenAPI: `/api/mastra/openapi.json`
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
+## API routes
 
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
+### Health
 
-### Utilities
+- `GET /api/health`
+  Returns `{ "ok": true }`.
 
-This Turborepo has some additional tools already setup for you:
+### Authentication (Better Auth)
 
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
+- `POST /api/auth/*`
+- `GET /api/auth/*`
+  Routes are handled by `packages/auth/server.ts`.
 
-### Build
+### Agent (Mastra)
 
-To build all apps and packages, run the following command:
+- `GET /api/mastra/openapi.json`
+  Mastra OpenAPI schema used by the docs UI.
+- Mastra endpoints are served under `/api/mastra/*`.
+  For the exact request/response shapes, consult the OpenAPI schema above.
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+### Documentation
 
-```sh
-cd my-turborepo
-turbo build
-```
+- `GET /doc`
+  OpenAPI JSON for the Hono app routes.
+- `GET /reference`
+  Scalar API Reference UI. It aggregates sources including:
+  - `/doc`
+  - `/api/auth/open-api/generate-schema`
+  - `/api/mastra/openapi.json`
 
-Without global `turbo`, use your package manager:
+## Mastra agent configuration
 
-```sh
-cd my-turborepo
-npx turbo build
-bun dlx turbo build
-bun exec turbo build
-```
+The Mastra agent is defined in [packages/mastra](packages/mastra/):
 
-You can build a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+- `packages/mastra/src/mastra/agents/agent.ts` configures the agent metadata, model selection, and memory.
+- `packages/mastra/src/mastra/index.ts` configures:
+  - Mastra auth integration using Better Auth (`MastraAuthBetterAuth`)
+  - Postgres-backed storage (`MastraCompositeStore` + `PostgresStore`, using `sst` `Resource.DATABASE_URL`)
+  - Langfuse observability via `Resource.LANGFUSE_*`
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
+## Database
 
-```sh
-turbo build --filter=docs
-```
+Postgres is used for:
 
-Without global `turbo`:
+- Better Auth persistence (schema defined in `packages/db/schema/auth.ts`)
+- Mastra storage (Mastra also creates its own tables for memory/tasks/schedules)
 
-```sh
-npx turbo build --filter=docs
-bun exec turbo build --filter=docs
-bun exec turbo build --filter=docs
-```
+Database migrations are handled by `drizzle-kit` in `packages/db`.
 
-### Develop
+## Development and deployment
 
-To develop all apps and packages, run the following command:
+### Local dev
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+The root script runs SST in local stage:
 
-```sh
-cd my-turborepo
-turbo dev
-```
+- `bun dev` (see `package.json`)
 
-Without global `turbo`, use your package manager:
+### DB setup (local)
 
-```sh
-cd my-turborepo
-npx turbo dev
-bun exec turbo dev
-bun exec turbo dev
-```
+To generate and apply the DB schema/migrations, the repo provides:
 
-You can develop a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+- `bun run setup:schema`
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
+### Deploy
 
-```sh
-turbo dev --filter=web
-```
+Use SST stages via:
 
-Without global `turbo`:
+- `bun run deploy:dev`
 
-```sh
-npx turbo dev --filter=web
-bun exec turbo dev --filter=web
-bun exec turbo dev --filter=web
-```
+## Environment variables (SST secrets)
 
-### Remote Caching
+Secrets are declared in `packages/infra/secrets.ts` and are required by runtime code.
 
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
+- `BETTER_AUTH_SECRET`
+  Better Auth session signing secret.
+- `DATABASE_URL`
+  Postgres connection string (used by auth and Mastra storage).
+- `LANGFUSE_PUBLIC_KEY`
+- `LANGFUSE_SECRET_KEY`
+- `LANGFUSE_BASE_URL`
+  Langfuse observability configuration for Mastra.
+- `PINECONE_API_KEY`
+- `TAVILY_API_KEY`
+  SST secrets available for agent integrations/tools (depending on how Mastra tools are enabled/configured).
 
-Turborepo can use a technique known as [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
+### LLM provider keys
 
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
+The Mastra agent model is configured in `packages/mastra/src/mastra/agents/agent.ts` and will require the corresponding LLM provider environment variables (for example, `OPENAI_API_KEY` for OpenAI-based models).
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+## Repository layout (quick map)
 
-```sh
-cd my-turborepo
-turbo login
-```
+- [apps/api](apps/api/): Hono API server + route wiring
+- [packages/auth](packages/auth/): Better Auth server/cookie helpers
+- [packages/mastra](packages/mastra/): Mastra agent + Mastra configuration
+- `packages/db`: Drizzle schema + migration scripts (auth tables)
+- [packages/infra](packages/infra/): SST stacks (secrets, domains, ports, and the API service)
 
-Without global `turbo`, use your package manager:
+Useful additional entrypoints:
 
-```sh
-cd my-turborepo
-npx turbo login
-bun exec turbo login
-bun exec turbo login
-```
-
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo link
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo link
-bun exec turbo link
-bun exec turbo link
-```
-
-## Useful Links
-
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.dev/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.dev/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.dev/docs/reference/configuration)
-- [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)
+- `sst.config.ts`: SST app configuration and stack imports.
+- `apps/api/src/lib/configure-openapi.ts`: OpenAPI + Scalar docs setup.

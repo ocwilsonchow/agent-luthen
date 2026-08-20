@@ -1,0 +1,14 @@
+{
+  "typescript.tsserver.maxTsServerMemory": 8192,
+  "typescript.disableAutomaticTypeAcquisition": true,
+  "typescript.preferences.includePackageJsonAutoImports": "off",
+  "files.watcherExclude": {
+    "**/.sst/**": true,
+    "**/node_modules/**": true,
+    "**/.next/**": true,
+    "**/.turbo/**": true
+  },
+  "search.exclude": {
+    "**/.sst": true
+  }
+}

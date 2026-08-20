@@ -1,5 +1,17 @@
 {
   "compilerOptions": {
-    "esModuleInterop": true
-  }
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "noEmit": true
+  },
+  "files": [],
+  "exclude": [
+    "node_modules",
+    "**/node_modules",
+    ".sst",
+    "**/.sst",
+    "dist",
+    "**/.next",
+    "**/.turbo"
+  ]
 }

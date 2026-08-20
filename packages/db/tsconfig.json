@@ -23,5 +23,7 @@
     "paths": {
       "@/*": ["./*"]
     }
-  }
+  },
+  "include": ["*.ts", "schema/**/*.ts", "sst-env.d.ts"],
+  "exclude": ["node_modules", "drizzle"]
 }
