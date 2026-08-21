@@ -41,6 +41,9 @@
     "cancel": "取消",
     "emptyTitle": "开始对话",
     "emptyDescription": "发送消息，或选择建议提示。",
+    "refreshPrompts": "换一批建议",
+    "refreshPromptsError": "无法刷新建议提示。",
+    "followUps": "追问",
     "promptPlaceholder": "向研究代理提问…",
     "queued": "排队中",
     "connection": {
@@ -64,6 +67,9 @@
     "usageReasoning": "推理",
     "usageCached": "缓存",
     "thinking": "思考中",
+    "keyPoints": "要点",
+    "keySafetyNotes": "关键安全提示",
+    "safetyDisclaimer": "请用专门的相互作用核对工具核实用药。没有警示并不代表联用安全。",
     "medKind": {
       "generic": "通用名",
       "brand": "商品名",

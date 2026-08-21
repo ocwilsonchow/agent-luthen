@@ -41,6 +41,9 @@
     "cancel": "取消",
     "emptyTitle": "開始對話",
     "emptyDescription": "傳送訊息，或選擇建議提示。",
+    "refreshPrompts": "換一批建議",
+    "refreshPromptsError": "無法重新整理建議提示。",
+    "followUps": "追問",
     "promptPlaceholder": "向研究代理提問…",
     "queued": "排隊中",
     "connection": {
@@ -64,6 +67,9 @@
     "usageReasoning": "推理",
     "usageCached": "快取",
     "thinking": "思考中",
+    "keyPoints": "重點",
+    "keySafetyNotes": "關鍵安全提示",
+    "safetyDisclaimer": "請用專門的交互作用核對工具核實用藥。沒有警示並不代表併用安全。",
     "medKind": {
       "generic": "通用名",
       "brand": "商品名",

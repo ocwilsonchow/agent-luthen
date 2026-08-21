@@ -52,9 +52,10 @@ import {
 } from "@/components/ai-elements/tool"
 import type { QueueMessage } from "@/components/ai-elements/queue"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { AgentTaskList } from "@/components/chat/agent-task-list"
-import { assistantMedMarkdown } from "@/components/chat/med-chip"
+import { MessageFollowUps } from "@/components/chat/message-follow-ups"
+import { SuggestedPrompts } from "@/components/chat/suggested-prompts"
+import { assistantMedMarkdown } from "@/components/chat/clinical-callout"
 import { MessageQueue } from "@/components/chat/message-queue"
 import { MessageSources } from "@/components/chat/message-sources"
 import { MessageUsage } from "@/components/chat/message-usage"
@@ -64,12 +65,14 @@ import {
   tasksFromMessages,
   hasVisibleChatParts,
 } from "@/lib/chat/agent-tasks"
-import { closeIncompleteMedTag } from "@/lib/chat/med-kind"
+import { closeIncompleteClinicalTags } from "@/lib/chat/clinical-tags"
 import { MastraThreadTransport } from "@/lib/chat/mastra-thread-transport"
 import { getMastraClient } from "@/lib/mastra/client"
-import { userMessageFromData } from "@/lib/chat/mastra-chunks"
+import {
+  userMessageFromData,
+  userTextFromMessage,
+} from "@/lib/chat/mastra-chunks"
 import { toUiMessages } from "@/lib/chat/to-ui-messages"
-import { suggestedPromptsFromAgent } from "@/lib/mastra/agent"
 import { agentQueryOptions } from "@/lib/queries/agents"
 import { toolApprovalMutationOptions } from "@/lib/queries/chat"
 import { sessionQueryOptions } from "@/lib/queries/session"
@@ -104,7 +107,7 @@ function MessageParts({
           return (
             <MessageContent key={`${message.id}-text-${index}`}>
               <MessageResponse {...(isAssistant ? assistantMedMarkdown : {})}>
-                {isAssistant ? closeIncompleteMedTag(part.text) : part.text}
+                {isAssistant ? closeIncompleteClinicalTags(part.text) : part.text}
               </MessageResponse>
             </MessageContent>
           )
@@ -246,7 +249,6 @@ function ChatPaneReady({
   const queryClient = useQueryClient()
   const router = useRouter()
   const agentQuery = useQuery(agentQueryOptions(agentId))
-  const prompts = suggestedPromptsFromAgent(agentQuery.data)
   const sentPending = useRef(false)
   const resumeStreamRef = useRef(async () => {})
   const stopRef = useRef(async () => {})
@@ -374,11 +376,21 @@ function ChatPaneReady({
   }, [agentId, pendingPrompt, router, sendMessage, threadId])
 
   const tasks = useMemo(() => tasksFromMessages(messages), [messages])
+  const lastVisible = visibleMessages.at(-1)
+  const lastUserText = useMemo(() => {
+    for (let index = visibleMessages.length - 1; index >= 0; index -= 1) {
+      const message = visibleMessages[index]
+      if (message?.role === "user") return userTextFromMessage(message)
+    }
+    return ""
+  }, [visibleMessages])
 
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
-      <div className="mx-auto flex min-h-0 w-full max-w-prose flex-1 flex-col">
-        <AgentTaskList tasks={tasks} />
+      <div className="flex min-h-0 w-full flex-1 flex-col">
+        <div className="mx-auto w-full max-w-prose">
+          <AgentTaskList tasks={tasks} />
+        </div>
         <Conversation className="min-h-0">
           <ConversationContent>
             {visibleMessages.length === 0 && !showThinking ? (
@@ -386,42 +398,49 @@ function ChatPaneReady({
                 title={t("emptyTitle")}
                 description={t("emptyDescription")}
               >
-                {prompts.length > 0 ? (
-                  <div className="flex flex-wrap justify-center gap-2">
-                    {prompts.map((prompt) => (
-                      <Button
-                        key={prompt}
-                        size="sm"
-                        variant="outline"
-                        onClick={() => void submitPrompt(prompt)}
-                      >
-                        {prompt}
-                      </Button>
-                    ))}
-                  </div>
-                ) : null}
+                <SuggestedPrompts
+                  agentId={agentId}
+                  agent={agentQuery.data}
+                  onSelect={submitPrompt}
+                />
               </ConversationEmptyState>
             ) : (
               <>
-                {visibleMessages.map((message) => (
-                  <Message from={message.role} key={message.id}>
-                    <MessageParts
-                      message={message}
-                      agentId={agentId}
-                      threadId={threadId}
-                      resourceId={resourceId}
-                      modelId={agentQuery.data?.modelId}
-                      provider={agentQuery.data?.provider}
-                    />
-                  </Message>
-                ))}
+                {visibleMessages.map((message) => {
+                  const isLastAssistant =
+                    message.role === "assistant" &&
+                    message.id === lastVisible?.id &&
+                    !isBusy
+                  return (
+                    <Message from={message.role} key={message.id}>
+                      <MessageParts
+                        message={message}
+                        agentId={agentId}
+                        threadId={threadId}
+                        resourceId={resourceId}
+                        modelId={agentQuery.data?.modelId}
+                        provider={agentQuery.data?.provider}
+                      />
+                      {isLastAssistant ? (
+                        <MessageFollowUps
+                          agentId={agentId}
+                          threadId={threadId}
+                          messageId={message.id}
+                          userText={lastUserText}
+                          assistantText={userTextFromMessage(message)}
+                          onSelect={submitPrompt}
+                        />
+                      ) : null}
+                    </Message>
+                  )
+                })}
                 {showThinking ? <ThinkingIndicator /> : null}
               </>
             )}
           </ConversationContent>
           <ConversationScrollButton />
         </Conversation>
-        <div className="shrink-0 border-t bg-background p-3">
+        <div className="mx-auto w-full max-w-prose shrink-0 border-t bg-background py-3">
           <MessageQueue label={t("queued")} messages={queuedMessages} />
           <PromptInput
             className={queuedMessages.length > 0 ? "rounded-t-none" : undefined}

@@ -41,6 +41,9 @@
     "cancel": "Cancel",
     "emptyTitle": "Start a conversation",
     "emptyDescription": "Send a message or pick a suggested prompt.",
+    "refreshPrompts": "Refresh suggestions",
+    "refreshPromptsError": "Could not refresh suggestions.",
+    "followUps": "Follow-ups",
     "promptPlaceholder": "Ask the research agent…",
     "queued": "Queued",
     "connection": {
@@ -64,6 +67,9 @@
     "usageReasoning": "Reasoning",
     "usageCached": "Cached",
     "thinking": "Thinking",
+    "keyPoints": "Key points",
+    "keySafetyNotes": "Key Safety Notes",
+    "safetyDisclaimer": "Always check drug interactions with a dedicated checker. A missing warning does not mean a combination is safe.",
     "medKind": {
       "generic": "Generic",
       "brand": "Brand",
