@@ -1,137 +1,154 @@
 # agent-luthen
 
-A monorepo that deploys a Hono API (SST) integrating:
+Monorepo for a clinical-guidelines research agent. A Next.js chat app talks to a Hono API that hosts Better Auth and a Mastra agent runtime. SST deploys both services to AWS.
 
-- Better Auth (`/api/auth/*`) for session/auth handling
-- Mastra (`/api/mastra/*`) for an LLM agent runtime
-- OpenAPI + Scalar for API documentation
-
-## How it works (architecture)
+## How it works
 
 ```mermaid
 flowchart LR
-  Client[Client / Browser] -->|HTTP| Api[SST Hono API (apps/api)]
-  Api --> Health[Health route (/api/health)]
-  Api --> Auth[Better Auth handlers (/api/auth/*)]
-  Api --> Mastra[MastraServer (/api/mastra/*)]
-  Api --> Docs[OpenAPI + Scalar (/doc, /reference)]
+  Browser[Browser] -->|HTTP + session cookie| Web[Next.js app apps/app]
+  Browser -->|HTTP + session cookie| Api[SST Hono API apps/api]
+  Web -->|NEXT_PUBLIC_API_URL| Api
 
-  Mastra --> Postgres[(Postgres via SST DATABASE_URL)]
-  Mastra --> Langfuse[(Langfuse via SST LANGFUSE_* secrets)]
+  Api --> Health[Health /api/health]
+  Api --> Auth[Better Auth /api/auth/*]
+  Api --> Mastra[MastraServer /api/mastra/*]
+  Api --> Docs[OpenAPI + Scalar /doc, /reference]
+
+  Mastra --> Postgres[(Postgres DATABASE_URL)]
+  Mastra --> Gateway[Vercel AI Gateway AI_GATEWAY_API_KEY]
+  Mastra --> Tavily[Tavily search/extract]
+  Mastra --> Langfuse[(Langfuse LANGFUSE_*)]
+  Auth --> Postgres
 ```
 
-### API entrypoint and wiring
+Local ports (from `packages/infra/ports.ts`):
 
-The API server is implemented in `apps/api`:
+| Service        | Port | URL                     |
+| -------------- | ---- | ----------------------- |
+| Web app        | 3000 | http://localhost:3000   |
+| API            | 3001 | http://localhost:3001   |
+| Mastra Studio  | 3002 | http://localhost:3002   |
 
-- `apps/api/src/index.ts` starts the Hono server.
-- `apps/api/src/app.ts` mounts routes under `/api` and wires:
-  - health route
-  - Better Auth endpoints
-  - Mastra endpoints
-  - OpenAPI/Scalar docs endpoints
-- Mastra is configured in `apps/api/src/lib/configure-mastra.ts`:
-  - prefix: `/api/mastra`
-  - Mastra OpenAPI: `/api/mastra/openapi.json`
+Non-local stages use `{stage}.agent-luthen.slchow.com` for the web app and `{stage}.api.agent-luthen.slchow.com` for the API.
+
+## Apps
+
+### Web (`apps/app`)
+
+Next.js App Router chat UI. Authenticated users land on the clinical research agent and can open threads. The app talks to Mastra through `@mastra/client-js` at `{API}/api/mastra` with cookie credentials.
+
+- Locales: `en`, `zh-cn`, `zh-hk` (`next-intl`)
+- Auth: Better Auth client against the API (`packages/auth`)
+- Chat: streams Mastra chunks, tool calls, sources, and usage
+
+### API (`apps/api`)
+
+Hono server started from `apps/api/src/index.ts`. `apps/api/src/app.ts` mounts:
+
+- Health under `/api`
+- Mastra under `/api/mastra` (`apps/api/src/lib/configure-mastra.ts`)
+- Better Auth under `/api/auth/*`
+- OpenAPI + Scalar docs
 
 ## API routes
 
 ### Health
 
-- `GET /api/health`
-  Returns `{ "ok": true }`.
+- `GET /api/health` — `{ "ok": true }`
 
 ### Authentication (Better Auth)
 
-- `POST /api/auth/*`
-- `GET /api/auth/*`
-  Routes are handled by `packages/auth/server.ts`.
+- `GET` / `POST` `/api/auth/*` — handled by `packages/auth/server.ts`
+
+Email/password is enabled; sign-up is disabled (accounts are provisioned). Plugins include admin, organization, OpenAPI, multi-session, and Next.js cookies.
 
 ### Agent (Mastra)
 
-- `GET /api/mastra/openapi.json`
-  Mastra OpenAPI schema used by the docs UI.
-- Mastra endpoints are served under `/api/mastra/*`.
-  For the exact request/response shapes, consult the OpenAPI schema above.
+- `GET /api/mastra/openapi.json` — Mastra OpenAPI schema
+- Other agent/thread/memory endpoints live under `/api/mastra/*` (auth required except the OpenAPI document)
 
 ### Documentation
 
-- `GET /doc`
-  OpenAPI JSON for the Hono app routes.
-- `GET /reference`
-  Scalar API Reference UI. It aggregates sources including:
+- `GET /doc` — OpenAPI JSON for Hono app routes
+- `GET /reference` — Scalar UI, aggregating:
   - `/doc`
   - `/api/auth/open-api/generate-schema`
   - `/api/mastra/openapi.json`
 
-## Mastra agent configuration
+## Mastra agent
 
-The Mastra agent is defined in [packages/mastra](packages/mastra/):
+Configured in [`packages/mastra`](packages/mastra/):
 
-- `packages/mastra/src/mastra/agents/agent.ts` configures the agent metadata, model selection, and memory.
-- `packages/mastra/src/mastra/index.ts` configures:
-  - Mastra auth integration using Better Auth (`MastraAuthBetterAuth`)
-  - Postgres-backed storage (`MastraCompositeStore` + `PostgresStore`, using `sst` `Resource.DATABASE_URL`)
-  - Langfuse observability via `Resource.LANGFUSE_*`
+- `packages/mastra/src/mastra/index.ts` — Mastra instance: Better Auth, Postgres storage, Langfuse, Tavily tools
+- `packages/mastra/src/mastra/agents/research/agent.ts` — **Clinical Guidelines Researcher** (`clinical-research-agent`), exposed as a durable agent
+- `packages/mastra/src/mastra/models/index.ts` — models via Vercel AI Gateway (currently `deepseek/deepseek-v4-flash`)
+- `packages/mastra/src/mastra/tools/tavily-tools.ts` — Tavily search and extract
+
+Mastra Studio (`bun run mastra:studio`) loads the same SST secrets as the API.
 
 ## Database
 
 Postgres is used for:
 
-- Better Auth persistence (schema defined in `packages/db/schema/auth.ts`)
-- Mastra storage (Mastra also creates its own tables for memory/tasks/schedules)
+- Better Auth tables (`packages/db/schema/auth.ts`)
+- Mastra storage (Mastra creates its own memory/task tables)
 
-Database migrations are handled by `drizzle-kit` in `packages/db`.
+Schema work is Drizzle in `packages/db`. Apply locally with `bun run setup:schema` (auth generate → drizzle generate → migrate → push).
 
 ## Development and deployment
 
-### Local dev
+Requires [Bun](https://bun.sh) and AWS SSO (`bun run sso` uses the `sinlongchow` session; SST uses the `luthen` AWS profile).
 
-The root script runs SST in local stage:
+### Local
 
-- `bun dev` (see `package.json`)
+```bash
+bun install
+bun run setup:schema   # first time, or after schema changes
+bun dev                # sst dev --stage local (web + API)
+```
 
-### DB setup (local)
+Useful extras:
 
-To generate and apply the DB schema/migrations, the repo provides:
-
-- `bun run setup:schema`
+- `bun run mastra:studio` — Mastra Studio with SST secrets
+- `bun run db:studio` — Drizzle Studio
+- `bun run killports` — free local ports 3000–3002
 
 ### Deploy
 
-Use SST stages via:
-
-- `bun run deploy:dev`
+```bash
+bun run deploy:dev     # sst deploy --stage dev
+```
 
 ## Environment variables (SST secrets)
 
-Secrets are declared in `packages/infra/secrets.ts` and are required by runtime code.
+Declared in `packages/infra/secrets.ts` and linked into the API service.
 
-- `BETTER_AUTH_SECRET`
-  Better Auth session signing secret.
-- `DATABASE_URL`
-  Postgres connection string (used by auth and Mastra storage).
-- `LANGFUSE_PUBLIC_KEY`
-- `LANGFUSE_SECRET_KEY`
-- `LANGFUSE_BASE_URL`
-  Langfuse observability configuration for Mastra.
-- `PINECONE_API_KEY`
-- `TAVILY_API_KEY`
-  SST secrets available for agent integrations/tools (depending on how Mastra tools are enabled/configured).
+| Secret               | Used for                                      |
+| -------------------- | --------------------------------------------- |
+| `BETTER_AUTH_SECRET` | Session signing                               |
+| `DATABASE_URL`       | Postgres for auth and Mastra storage          |
+| `AI_GATEWAY_API_KEY` | Vercel AI Gateway (LLM calls)                 |
+| `LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY` / `LANGFUSE_BASE_URL` | Mastra observability |
+| `TAVILY_API_KEY`     | Agent web search / extract                    |
+| `PINECONE_API_KEY`   | Linked to the API; not used by app code yet   |
 
-### LLM provider keys
+Web env (injected by SST in `packages/infra/app.ts`):
 
-The Mastra agent model is configured in `packages/mastra/src/mastra/agents/agent.ts` and will require the corresponding LLM provider environment variables (for example, `OPENAI_API_KEY` for OpenAI-based models).
+- `NEXT_PUBLIC_API_URL`
+- `NEXT_PUBLIC_AUTH_COOKIE_PREFIX`
 
-## Repository layout (quick map)
+## Repository layout
 
-- [apps/api](apps/api/): Hono API server + route wiring
-- [packages/auth](packages/auth/): Better Auth server/cookie helpers
-- [packages/mastra](packages/mastra/): Mastra agent + Mastra configuration
-- `packages/db`: Drizzle schema + migration scripts (auth tables)
-- [packages/infra](packages/infra/): SST stacks (secrets, domains, ports, and the API service)
+- [`apps/app`](apps/app/) — Next.js chat UI
+- [`apps/api`](apps/api/) — Hono API, route wiring, OpenAPI
+- [`packages/auth`](packages/auth/) — Better Auth server, client, and cookie helpers
+- [`packages/mastra`](packages/mastra/) — agent, tools, Mastra config
+- [`packages/db`](packages/db/) — Drizzle schema and migrations
+- [`packages/infra`](packages/infra/) — SST secrets, VPC/cluster, API service, Next.js app
 
-Useful additional entrypoints:
+Other entrypoints:
 
-- `sst.config.ts`: SST app configuration and stack imports.
-- `apps/api/src/lib/configure-openapi.ts`: OpenAPI + Scalar docs setup.
+- `sst.config.ts` — SST app and stack imports
+- `apps/api/src/lib/configure-openapi.ts` — Scalar docs sources
+- `scripts/mastra-studio.sh` — Studio under `sst shell`
