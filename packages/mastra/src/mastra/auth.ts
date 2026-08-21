@@ -10,7 +10,7 @@ export class MastraAuthBetterAuth extends MastraAuthBetterAuthBase {
   constructor(
     options: Omit<MastraAuthBetterAuthBaseOptions, "auth"> & {
       auth?: typeof authServer
-    },
+    }
   ) {
     super({
       ...options,

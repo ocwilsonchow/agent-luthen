@@ -1,0 +1,12 @@
+node_modules
+.sst
+.turbo
+.next
+dist
+coverage
+.mastra
+bun.lock
+packages/mastra/.agents
+packages/mastra/.claude
+packages/db/drizzle
+**/sst-env.d.ts

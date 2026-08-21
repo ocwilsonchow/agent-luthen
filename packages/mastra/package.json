@@ -11,7 +11,8 @@
     "studio": "mastra dev",
     "build": "node -e \"process.exit(0)\"",
     "build:mastra": "mastra build",
-    "start": "mastra start"
+    "start": "mastra start",
+    "check-types": "tsc --noEmit"
   },
   "keywords": [],
   "author": "",
