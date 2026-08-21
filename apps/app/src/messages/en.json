@@ -54,6 +54,7 @@
     "approve": "Approve",
     "decline": "Decline",
     "toolApproval": "The agent wants to run a tool.",
-    "sources": "Sources"
+    "sources": "Sources",
+    "taskProgress": "Tasks · {completed} of {total}"
   }
 }

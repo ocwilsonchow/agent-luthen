@@ -54,6 +54,7 @@
     "approve": "批准",
     "decline": "拒绝",
     "toolApproval": "代理想要执行工具。",
-    "sources": "来源"
+    "sources": "来源",
+    "taskProgress": "任务 · {completed}/{total}"
   }
 }

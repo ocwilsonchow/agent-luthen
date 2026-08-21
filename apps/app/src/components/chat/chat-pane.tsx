@@ -49,6 +49,8 @@ import type { QueueMessage } from "@/components/ai-elements/queue"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { MessageQueue } from "@/components/chat/message-queue"
+import { AgentTaskList } from "@/components/chat/agent-task-list"
+import { isTaskToolPart, tasksFromMessages, hasVisibleChatParts } from "@/lib/chat/agent-tasks"
 import { MastraThreadTransport } from "@/lib/chat/mastra-thread-transport"
 import { getMastraClient } from "@/lib/mastra/client"
 import {
@@ -105,6 +107,7 @@ function MessageParts({
         }
 
         if (isToolUIPart(part)) {
+          if (isTaskToolPart(part)) return null
           return (
             <div key={`${message.id}-tool-${index}`} className="space-y-2">
               <Tool>
@@ -363,9 +366,12 @@ function ChatPaneReady({
     router.replace(`/agents/${agentId}/${threadId}`)
   }, [agentId, pendingPrompt, router, sendMessage, threadId])
 
+  const tasks = useMemo(() => tasksFromMessages(messages), [messages])
+
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
       <div className="mx-auto flex min-h-0 w-full max-w-prose flex-1 flex-col">
+        <AgentTaskList tasks={tasks} />
         <Conversation className="min-h-0">
           <ConversationContent>
             {messages.length === 0 ? (
@@ -389,7 +395,7 @@ function ChatPaneReady({
                 ) : null}
               </ConversationEmptyState>
             ) : (
-              messages.map((message) => (
+              messages.filter(hasVisibleChatParts).map((message) => (
                 <Message from={message.role} key={message.id}>
                   <MessageParts
                     message={message}
