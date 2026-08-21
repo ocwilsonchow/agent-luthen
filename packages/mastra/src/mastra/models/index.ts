@@ -1,6 +1,6 @@
-import { MastraModelConfig } from "@mastra/core/llm"
+import type { MastraModelConfig } from "@mastra/core/llm"
 import { Resource } from "sst"
-import { gateway, GatewayModelId } from "ai"
+import { gateway, type GatewayModelId } from "ai"
 
 export const createVercelModelConfig = (
   modelId: GatewayModelId
@@ -15,8 +15,8 @@ export const createVercelModelConfig = (
 type ModelType = "base" | "observation" | "tool"
 
 export const vercelModels = {
-  base: createVercelModelConfig(gateway("alibaba/qwen3.8-max").modelId),
+  base: createVercelModelConfig(gateway("deepseek/deepseek-v4-flash").modelId),
   observation: createVercelModelConfig(
-    gateway("openai/gpt-5.4-mini").modelId
+    gateway("deepseek/deepseek-v4-flash").modelId
   ),
 } satisfies Partial<Record<ModelType, MastraModelConfig>>

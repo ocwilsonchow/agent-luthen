@@ -10,13 +10,14 @@ export default $config({
       providers: {
         aws: {
           profile: "luthen",
-          region: "ap-east-1"
+          region: "ap-east-1",
         },
-      }
-    };
+      },
+    }
   },
   async run() {
     await import("./packages/infra/secrets")
     await import("./packages/infra/api")
+    await import("./packages/infra/app")
   },
-});
+})

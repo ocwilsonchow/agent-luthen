@@ -14,7 +14,11 @@ export const clinicalResearchAgent = new Agent({
   name: "Clinical Guidelines Researcher",
   description,
   metadata: {
-    suggestedPrompts: [],
+    suggestedPrompts: [
+      "Summarize the latest hypertension guidelines for adults.",
+      "Compare first-line treatments for type 2 diabetes.",
+      "What are current screening recommendations for colorectal cancer?",
+    ],
   },
   instructions,
   model: vercelModels.base,

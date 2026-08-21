@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     "./api": "./api.ts",
+    "./app": "./app.ts",
     "./cluster": "./cluster.ts",
     "./domain": "./domain.ts",
     "./ports": "./ports.ts",

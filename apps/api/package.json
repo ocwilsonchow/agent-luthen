@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
+    "check-types": "tsc --noEmit --allowImportingTsExtensions",
     "start": "tsx src/index.ts"
   },
   "dependencies": {

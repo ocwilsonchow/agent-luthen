@@ -1,10 +1,7 @@
 import { Mastra } from "@mastra/core/mastra"
 import { MastraCompositeStore } from "@mastra/core/storage"
 import { Observability } from "@mastra/observability"
-import {
-  durableClinicalResearchAgent,
-  eventedClinicalResearchAgent,
-} from "./agents/research/agent"
+import { durableClinicalResearchAgent } from "./agents/research/agent"
 import { tavilyExtractTool, tavilySearchTool } from "./tools/tavily-tools"
 import { LangfuseExporter } from "@mastra/langfuse"
 import { Resource } from "sst"

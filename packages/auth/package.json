@@ -9,7 +9,8 @@
     "./cookie": "./cookie.ts"
   },
   "scripts": {
-    "auth:generate": "bun x auth@latest generate --config ./server.ts --output ../db/schema/auth.ts -y"
+    "auth:generate": "bun x auth@latest generate --config ./server.ts --output ../db/schema/auth.ts -y",
+    "check-types": "tsc --noEmit"
   },
   "dependencies": {
     "@better-auth/api-key": "1.7.1",
