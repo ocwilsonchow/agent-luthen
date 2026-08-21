@@ -28,6 +28,7 @@ export const auth = betterAuth({
     `http://localhost:${ports.app}`,
     `http://localhost:${ports.mastraStudio}`,
     `https://api.${domain}`,
+    `https://${Resource.App.stage}.${domain}`,
     `https://${Resource.App.stage}.api.${domain}`,
   ],
   session: { deferSessionRefresh: true },

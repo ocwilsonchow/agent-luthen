@@ -1,0 +1,59 @@
+{
+  "app": {
+    "name": "Luthen",
+    "tagline": "临床研究代理"
+  },
+  "auth": {
+    "title": "登录",
+    "description": "使用邮箱和密码继续。",
+    "email": "邮箱",
+    "password": "密码",
+    "submit": "登录",
+    "submitting": "登录中…",
+    "error": "无法登录，请检查你的账号信息。",
+    "emailInvalid": "请输入有效的邮箱地址。",
+    "passwordRequired": "请输入密码。"
+  },
+  "nav": {
+    "newThread": "新对话",
+    "searchThreads": "搜索对话",
+    "agents": "代理",
+    "threads": "对话",
+    "rename": "重命名",
+    "delete": "删除",
+    "clone": "复制",
+    "locale": "语言",
+    "theme": "主题",
+    "themeLight": "浅色",
+    "themeDark": "深色",
+    "themeSystem": "跟随系统",
+    "signOut": "退出登录",
+    "noThreads": "还没有对话"
+  },
+  "thread": {
+    "untitled": "新对话",
+    "renameTitle": "重命名对话",
+    "renamePlaceholder": "对话标题",
+    "renameSubmit": "保存",
+    "deleteTitle": "删除对话",
+    "deleteDescription": "此操作将永久删除对话内容。",
+    "deleteConfirm": "删除",
+    "cancel": "取消",
+    "emptyTitle": "开始对话",
+    "emptyDescription": "发送消息，或选择建议提示。",
+    "promptPlaceholder": "向研究代理提问…",
+    "queued": "排队中",
+    "connection": {
+      "connecting": "正在连接",
+      "connected": "已连接",
+      "disconnected": "已断开",
+      "streaming": "正在生成"
+    }
+  },
+  "chat": {
+    "approve": "批准",
+    "decline": "拒绝",
+    "toolApproval": "代理想要执行工具。",
+    "sources": "来源"
+  }
+}
