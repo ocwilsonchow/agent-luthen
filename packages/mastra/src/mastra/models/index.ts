@@ -15,6 +15,8 @@ export const createVercelModelConfig = (
 type ModelType = "base" | "observation" | "tool"
 
 export const vercelModels = {
-  base: createVercelModelConfig(gateway("alibaba/qwen3.8-max").modelId),
-  observation: createVercelModelConfig(gateway("openai/gpt-5.4-mini").modelId),
+  base: createVercelModelConfig(gateway("deepseek/deepseek-v4-flash").modelId),
+  observation: createVercelModelConfig(
+    gateway("deepseek/deepseek-v4-flash").modelId
+  ),
 } satisfies Partial<Record<ModelType, MastraModelConfig>>

@@ -1,0 +1,60 @@
+{
+  "app": {
+    "name": "Luthen",
+    "tagline": "Clinical research agent"
+  },
+  "auth": {
+    "title": "Sign in",
+    "description": "Use your email and password to continue.",
+    "email": "Email",
+    "password": "Password",
+    "submit": "Sign in",
+    "submitting": "Signing in…",
+    "error": "Could not sign in. Check your credentials.",
+    "emailInvalid": "Enter a valid email address.",
+    "passwordRequired": "Password is required."
+  },
+  "nav": {
+    "newThread": "New thread",
+    "searchThreads": "Search threads",
+    "agents": "Agents",
+    "threads": "Threads",
+    "rename": "Rename",
+    "delete": "Delete",
+    "clone": "Clone",
+    "locale": "Language",
+    "theme": "Theme",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "themeSystem": "System",
+    "signOut": "Sign out",
+    "noThreads": "No threads yet"
+  },
+  "thread": {
+    "untitled": "New chat",
+    "renameTitle": "Rename thread",
+    "renamePlaceholder": "Thread title",
+    "renameSubmit": "Save",
+    "deleteTitle": "Delete thread",
+    "deleteDescription": "This will permanently delete the conversation.",
+    "deleteConfirm": "Delete",
+    "cancel": "Cancel",
+    "emptyTitle": "Start a conversation",
+    "emptyDescription": "Send a message or pick a suggested prompt.",
+    "promptPlaceholder": "Ask the research agent…",
+    "queued": "Queued",
+    "connection": {
+      "connecting": "Connecting",
+      "connected": "Connected",
+      "disconnected": "Disconnected",
+      "streaming": "Streaming"
+    }
+  },
+  "chat": {
+    "approve": "Approve",
+    "decline": "Decline",
+    "toolApproval": "The agent wants to run a tool.",
+    "sources": "Sources",
+    "taskProgress": "Tasks · {completed} of {total}"
+  }
+}
