@@ -6,49 +6,6 @@
 
 declare module "sst" {
   export interface Resource {
-    "AI_GATEWAY_API_KEY": {
-      "type": "sst.sst.Secret"
-      "value": string
-    }
-    "API": {
-      "service": string
-      "type": "sst.aws.Service"
-    }
-    "BETTER_AUTH_SECRET": {
-      "type": "sst.sst.Secret"
-      "value": string
-    }
-    "DATABASE_URL": {
-      "type": "sst.sst.Secret"
-      "value": string
-    }
-    "LANGFUSE_BASE_URL": {
-      "type": "sst.sst.Secret"
-      "value": string
-    }
-    "LANGFUSE_PUBLIC_KEY": {
-      "type": "sst.sst.Secret"
-      "value": string
-    }
-    "LANGFUSE_SECRET_KEY": {
-      "type": "sst.sst.Secret"
-      "value": string
-    }
-    "PINECONE_API_KEY": {
-      "type": "sst.sst.Secret"
-      "value": string
-    }
-    "TAVILY_API_KEY": {
-      "type": "sst.sst.Secret"
-      "value": string
-    }
-    "Vpc": {
-      "type": "sst.aws.Vpc"
-    }
-    "Web": {
-      "type": "sst.aws.Nextjs"
-      "url": string
-    }
   }
 }
 

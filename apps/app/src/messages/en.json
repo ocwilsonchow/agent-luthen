@@ -55,6 +55,24 @@
     "decline": "Decline",
     "toolApproval": "The agent wants to run a tool.",
     "sources": "Sources",
-    "taskProgress": "Tasks · {completed} of {total}"
+    "taskProgress": "Tasks · {completed} of {total}",
+    "usage": "{total} tokens",
+    "usageWithCost": "{total} tokens · {cost}",
+    "usageCost": "Cost",
+    "usageInput": "Input",
+    "usageOutput": "Output",
+    "usageReasoning": "Reasoning",
+    "usageCached": "Cached",
+    "thinking": "Thinking",
+    "medKind": {
+      "generic": "Generic",
+      "brand": "Brand",
+      "class": "Class",
+      "supplement": "Supplement",
+      "vaccine": "Vaccine",
+      "tcm": "TCM",
+      "device": "Device",
+      "unknown": "Product"
+    }
   }
 }

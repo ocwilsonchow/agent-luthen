@@ -55,6 +55,24 @@
     "decline": "拒绝",
     "toolApproval": "代理想要执行工具。",
     "sources": "来源",
-    "taskProgress": "任务 · {completed}/{total}"
+    "taskProgress": "任务 · {completed}/{total}",
+    "usage": "{total} tokens",
+    "usageWithCost": "{total} tokens · {cost}",
+    "usageCost": "费用",
+    "usageInput": "输入",
+    "usageOutput": "输出",
+    "usageReasoning": "推理",
+    "usageCached": "缓存",
+    "thinking": "思考中",
+    "medKind": {
+      "generic": "通用名",
+      "brand": "商品名",
+      "class": "药物类别",
+      "supplement": "补充剂",
+      "vaccine": "疫苗",
+      "tcm": "中药",
+      "device": "器械",
+      "unknown": "产品"
+    }
   }
 }

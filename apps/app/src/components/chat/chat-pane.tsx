@@ -43,19 +43,31 @@ import {
   ReasoningContent,
   ReasoningTrigger,
 } from "@/components/ai-elements/reasoning"
-import { Source, Sources, SourcesContent, SourcesTrigger } from "@/components/ai-elements/sources"
-import { Tool, ToolContent, ToolHeader, ToolInput, ToolOutput } from "@/components/ai-elements/tool"
+import {
+  Tool,
+  ToolContent,
+  ToolHeader,
+  ToolInput,
+  ToolOutput,
+} from "@/components/ai-elements/tool"
 import type { QueueMessage } from "@/components/ai-elements/queue"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { MessageQueue } from "@/components/chat/message-queue"
 import { AgentTaskList } from "@/components/chat/agent-task-list"
-import { isTaskToolPart, tasksFromMessages, hasVisibleChatParts } from "@/lib/chat/agent-tasks"
+import { assistantMedMarkdown } from "@/components/chat/med-chip"
+import { MessageQueue } from "@/components/chat/message-queue"
+import { MessageSources } from "@/components/chat/message-sources"
+import { MessageUsage } from "@/components/chat/message-usage"
+import { ThinkingIndicator } from "@/components/chat/thinking-indicator"
+import {
+  isTaskToolPart,
+  tasksFromMessages,
+  hasVisibleChatParts,
+} from "@/lib/chat/agent-tasks"
+import { closeIncompleteMedTag } from "@/lib/chat/med-kind"
 import { MastraThreadTransport } from "@/lib/chat/mastra-thread-transport"
 import { getMastraClient } from "@/lib/mastra/client"
-import {
-  userMessageFromData,
-} from "@/lib/chat/mastra-chunks"
+import { userMessageFromData } from "@/lib/chat/mastra-chunks"
 import { toUiMessages } from "@/lib/chat/to-ui-messages"
 import { suggestedPromptsFromAgent } from "@/lib/mastra/agent"
 import { agentQueryOptions } from "@/lib/queries/agents"
@@ -71,25 +83,29 @@ function MessageParts({
   agentId,
   threadId,
   resourceId,
+  modelId,
+  provider,
 }: {
   message: UIMessage
   agentId: string
   threadId: string
   resourceId: string
+  modelId?: string
+  provider?: string
 }) {
   const t = useTranslations("chat")
   const approval = useMutation(toolApprovalMutationOptions)
-  const sources = message.parts.filter(
-    (part) => part.type === "source-url" || part.type === "source-document"
-  )
 
   return (
     <>
       {message.parts.map((part, index) => {
         if (part.type === "text") {
+          const isAssistant = message.role === "assistant"
           return (
             <MessageContent key={`${message.id}-text-${index}`}>
-              <MessageResponse>{part.text}</MessageResponse>
+              <MessageResponse {...(isAssistant ? assistantMedMarkdown : {})}>
+                {isAssistant ? closeIncompleteMedTag(part.text) : part.text}
+              </MessageResponse>
             </MessageContent>
           )
         }
@@ -175,23 +191,8 @@ function MessageParts({
 
         return null
       })}
-      {sources.length > 0 ? (
-        <Sources>
-          <SourcesTrigger count={sources.length} />
-          <SourcesContent>
-            {sources.map((part, index) => {
-              const href = "url" in part ? String(part.url) : undefined
-              const title =
-                "title" in part && part.title ? String(part.title) : href
-              return (
-                <Source href={href} key={`${message.id}-source-${index}`} title={title}>
-                  {title}
-                </Source>
-              )
-            })}
-          </SourcesContent>
-        </Sources>
-      ) : null}
+      <MessageSources message={message} />
+      <MessageUsage message={message} modelId={modelId} provider={provider} />
     </>
   )
 }
@@ -262,7 +263,9 @@ function ChatPaneReady({
       messages: initialMessages,
       transport,
       onFinish: () => {
-        void queryClient.invalidateQueries({ queryKey: threadsQueryKey(agentId) })
+        void queryClient.invalidateQueries({
+          queryKey: threadsQueryKey(agentId),
+        })
       },
       onData: (part) => {
         if (part.type !== "data-user-message") return
@@ -272,7 +275,8 @@ function ChatPaneReady({
         setQueuedMessages((current) => {
           const index = current.findIndex((message) =>
             message.parts.some(
-              (queued) => queued.type === "text" && queued.text === incoming.text
+              (queued) =>
+                queued.type === "text" && queued.text === incoming.text
             )
           )
           if (index < 0) return current
@@ -321,6 +325,11 @@ function ChatPaneReady({
   }, [threadId])
 
   const isBusy = status === "submitted" || status === "streaming"
+  const visibleMessages = useMemo(
+    () => messages.filter(hasVisibleChatParts),
+    [messages]
+  )
+  const showThinking = isBusy && visibleMessages.at(-1)?.role !== "assistant"
 
   const submitPrompt = async (text: string) => {
     const trimmed = text.trim()
@@ -333,13 +342,11 @@ function ChatPaneReady({
       }
       setQueuedMessages((current) => [...current, queued])
       try {
-        await getMastraClient()
-          .getAgent(agentId)
-          .queueMessage({
-            message: trimmed,
-            threadId,
-            resourceId,
-          })
+        await getMastraClient().getAgent(agentId).queueMessage({
+          message: trimmed,
+          threadId,
+          resourceId,
+        })
       } catch {
         setQueuedMessages((current) =>
           current.filter((message) => message.id !== queued.id)
@@ -374,7 +381,7 @@ function ChatPaneReady({
         <AgentTaskList tasks={tasks} />
         <Conversation className="min-h-0">
           <ConversationContent>
-            {messages.length === 0 ? (
+            {visibleMessages.length === 0 && !showThinking ? (
               <ConversationEmptyState
                 title={t("emptyTitle")}
                 description={t("emptyDescription")}
@@ -395,16 +402,21 @@ function ChatPaneReady({
                 ) : null}
               </ConversationEmptyState>
             ) : (
-              messages.filter(hasVisibleChatParts).map((message) => (
-                <Message from={message.role} key={message.id}>
-                  <MessageParts
-                    message={message}
-                    agentId={agentId}
-                    threadId={threadId}
-                    resourceId={resourceId}
-                  />
-                </Message>
-              ))
+              <>
+                {visibleMessages.map((message) => (
+                  <Message from={message.role} key={message.id}>
+                    <MessageParts
+                      message={message}
+                      agentId={agentId}
+                      threadId={threadId}
+                      resourceId={resourceId}
+                      modelId={agentQuery.data?.modelId}
+                      provider={agentQuery.data?.provider}
+                    />
+                  </Message>
+                ))}
+                {showThinking ? <ThinkingIndicator /> : null}
+              </>
             )}
           </ConversationContent>
           <ConversationScrollButton />

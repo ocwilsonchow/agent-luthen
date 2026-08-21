@@ -1,4 +1,27 @@
-import type { UIMessage, UIMessageChunk } from "ai"
+import type { FinishReason, ToolUIPart, UIMessage, UIMessageChunk } from "ai"
+
+const FINISH_REASONS = new Set<FinishReason>([
+  "stop",
+  "length",
+  "content-filter",
+  "tool-calls",
+  "error",
+  "other",
+])
+
+export type TokenUsage = {
+  inputTokens?: number
+  outputTokens?: number
+  totalTokens?: number
+  reasoningTokens?: number
+  cachedInputTokens?: number
+}
+
+export type ChatMessageMetadata = {
+  usage?: TokenUsage
+  totalUsage?: TokenUsage
+  modelId?: string
+}
 
 export type MastraChunk = {
   type?: string
@@ -7,7 +30,22 @@ export type MastraChunk = {
   data?: unknown
   object?: unknown
   finishReason?: string
+  toolCallId?: string
+  toolName?: string
+  args?: unknown
+  input?: unknown
+  dynamic?: boolean
 }
+
+const TOOL_UI_STATES = new Set<ToolUIPart["state"]>([
+  "input-streaming",
+  "input-available",
+  "output-available",
+  "output-error",
+  "output-denied",
+  "approval-requested",
+  "approval-responded",
+])
 
 export function isTerminalMastraChunk(chunk: MastraChunk) {
   if (chunk.type === "error" || chunk.type === "abort") return true
@@ -61,6 +99,300 @@ function recordFromUnknown(value: unknown) {
   return value as Record<string, unknown>
 }
 
+function numberOf(value: unknown) {
+  return typeof value === "number" && Number.isFinite(value) ? value : undefined
+}
+
+export function tokenUsageFromUnknown(value: unknown): TokenUsage | undefined {
+  if (!value || typeof value !== "object") return undefined
+  const record = value as Record<string, unknown>
+  const usage: TokenUsage = {
+    inputTokens: numberOf(record.inputTokens) ?? numberOf(record.promptTokens),
+    outputTokens:
+      numberOf(record.outputTokens) ?? numberOf(record.completionTokens),
+    totalTokens: numberOf(record.totalTokens),
+    reasoningTokens: numberOf(record.reasoningTokens),
+    cachedInputTokens: numberOf(record.cachedInputTokens),
+  }
+  return Object.values(usage).some((token) => token != null) ? usage : undefined
+}
+
+function tokenUsageFromPayload(data: Record<string, unknown>) {
+  const output = recordFromUnknown(data.output)
+  return (
+    tokenUsageFromUnknown(output.usage) ?? tokenUsageFromUnknown(data.usage)
+  )
+}
+
+function totalTokenUsageFromPayload(data: Record<string, unknown>) {
+  return tokenUsageFromUnknown(data.totalUsage)
+}
+
+function usageMetadataFromPayload(
+  data: Record<string, unknown>
+): ChatMessageMetadata | undefined {
+  const usage = tokenUsageFromPayload(data)
+  const totalUsage = totalTokenUsageFromPayload(data) ?? usage
+  const modelId = modelIdFromPayload(data)
+  if (!usage && !totalUsage && !modelId) return undefined
+  return {
+    ...(usage ? { usage } : {}),
+    ...(totalUsage ? { totalUsage } : {}),
+    ...(modelId ? { modelId } : {}),
+  }
+}
+
+function modelIdFromPayload(data: Record<string, unknown>) {
+  const metadata = recordFromUnknown(data.metadata)
+  const response = recordFromUnknown(data.response)
+  const output = recordFromUnknown(data.output)
+  return (
+    textOf(response.modelId) ||
+    textOf(metadata.modelId) ||
+    textOf(output.modelId) ||
+    textOf(data.modelId) ||
+    undefined
+  )
+}
+
+export function usageFromMessage(message: UIMessage): TokenUsage | undefined {
+  return usageFromMetadata(message.metadata)
+}
+
+export function modelIdFromMessage(message: UIMessage): string | undefined {
+  const modelId = textOf(recordFromUnknown(message.metadata).modelId)
+  return modelId || undefined
+}
+
+export function totalTokenCount(usage: TokenUsage): number | undefined {
+  if (usage.totalTokens != null) return usage.totalTokens
+  if (usage.inputTokens == null && usage.outputTokens == null) return undefined
+  return (usage.inputTokens ?? 0) + (usage.outputTokens ?? 0)
+}
+
+function toolCallFields(chunk: MastraChunk, data: Record<string, unknown>) {
+  const invocation = recordFromUnknown(data.toolInvocation)
+  const top = chunk as Record<string, unknown>
+  const toolCallId =
+    textOf(data.toolCallId) ||
+    textOf(invocation.toolCallId) ||
+    textOf(top.toolCallId)
+  const toolName =
+    textOf(data.toolName) || textOf(invocation.toolName) || textOf(top.toolName)
+  const input =
+    data.args ??
+    data.input ??
+    invocation.args ??
+    invocation.input ??
+    top.args ??
+    top.input
+  const dynamic = Boolean(data.dynamic ?? invocation.dynamic ?? top.dynamic)
+  return { toolCallId, toolName, input, dynamic }
+}
+
+function toolInputDelta(chunk: MastraChunk, data: Record<string, unknown>) {
+  const top = chunk as Record<string, unknown>
+  return (
+    textOf(data.argsTextDelta) ||
+    textOf(data.inputTextDelta) ||
+    textOf(data.delta) ||
+    textOf(top.argsTextDelta) ||
+    textOf(top.inputTextDelta) ||
+    textOf(top.delta)
+  )
+}
+
+function mapToolUiState(
+  state: unknown,
+  invocation: Record<string, unknown>
+): ToolUIPart["state"] {
+  if (state === "partial-call") return "input-streaming"
+  if (state === "call") return "input-available"
+  if (state === "result") {
+    return invocation.isError ? "output-error" : "output-available"
+  }
+  if (
+    typeof state === "string" &&
+    TOOL_UI_STATES.has(state as ToolUIPart["state"])
+  ) {
+    return state as ToolUIPart["state"]
+  }
+  if (invocation.result !== undefined || invocation.output !== undefined) {
+    return invocation.isError ? "output-error" : "output-available"
+  }
+  if (invocation.args !== undefined || invocation.input !== undefined) {
+    return "input-available"
+  }
+  return "input-streaming"
+}
+
+function toolPartFromRecord(
+  record: Record<string, unknown>
+): UIMessage["parts"][number] | null {
+  if (record.type === "dynamic-tool") {
+    return record as UIMessage["parts"][number]
+  }
+
+  if (record.type === "tool-invocation") {
+    const invocation = recordFromUnknown(record.toolInvocation)
+    const toolName = textOf(invocation.toolName) || textOf(record.toolName)
+    if (!toolName) return null
+    const state = mapToolUiState(invocation.state, invocation)
+    const input = invocation.args ?? invocation.input ?? record.input
+    const output = invocation.result ?? invocation.output ?? record.output
+    const errorText =
+      textOf(invocation.errorText) ||
+      (invocation.isError ? String(invocation.result ?? "Tool error") : "")
+    const part: Record<string, unknown> = {
+      type: `tool-${toolName}`,
+      toolCallId:
+        textOf(invocation.toolCallId) || textOf(record.toolCallId) || toolName,
+      state,
+      input,
+    }
+    if (output !== undefined) part.output = output
+    if (errorText) part.errorText = errorText
+    if (invocation.approval && typeof invocation.approval === "object") {
+      part.approval = invocation.approval
+    }
+    if (typeof record.providerExecuted === "boolean") {
+      part.providerExecuted = record.providerExecuted
+    }
+    if (typeof record.title === "string") part.title = record.title
+    if (typeof invocation.rawInput !== "undefined") {
+      part.rawInput = invocation.rawInput
+    }
+    return part as UIMessage["parts"][number]
+  }
+
+  if (typeof record.type === "string" && record.type.startsWith("tool-")) {
+    if (record.input === undefined && record.args !== undefined) {
+      return { ...record, input: record.args } as UIMessage["parts"][number]
+    }
+    return record as UIMessage["parts"][number]
+  }
+
+  return null
+}
+
+function sourceFields(record: Record<string, unknown>) {
+  const nested = recordFromUnknown(record.source)
+  return {
+    sourceType: textOf(record.sourceType) || textOf(nested.sourceType),
+    sourceId:
+      textOf(record.sourceId) ||
+      textOf(record.id) ||
+      textOf(nested.id) ||
+      textOf(nested.sourceId),
+    url: textOf(record.url) || textOf(nested.url),
+    title: textOf(record.title) || textOf(nested.title),
+    mediaType:
+      textOf(record.mediaType) ||
+      textOf(record.mimeType) ||
+      textOf(nested.mediaType) ||
+      textOf(nested.mimeType),
+    filename: textOf(record.filename) || textOf(nested.filename),
+  }
+}
+
+function sourcePartFromRecord(
+  record: Record<string, unknown>
+): UIMessage["parts"][number] | null {
+  const fields = sourceFields(record)
+  const isDocument =
+    record.type === "source-document" || fields.sourceType === "document"
+  if (isDocument) {
+    return {
+      type: "source-document",
+      sourceId: fields.sourceId || fields.title || "source",
+      mediaType: fields.mediaType || "application/octet-stream",
+      title: fields.title || "source",
+      ...(fields.filename ? { filename: fields.filename } : {}),
+    }
+  }
+  if (!fields.url) return null
+  return {
+    type: "source-url",
+    sourceId: fields.sourceId || fields.url,
+    url: fields.url,
+    title: fields.title || undefined,
+  }
+}
+
+function sourceChunksFromRecord(
+  record: Record<string, unknown>
+): UIMessageChunk[] {
+  const part = sourcePartFromRecord(record)
+  if (!part) return []
+  if (part.type === "source-url") {
+    return [
+      {
+        type: "source-url",
+        sourceId: part.sourceId,
+        url: part.url,
+        title: part.title,
+      } as UIMessageChunk,
+    ]
+  }
+  if (part.type !== "source-document") return []
+  return [
+    {
+      type: "source-document",
+      sourceId: part.sourceId,
+      mediaType: part.mediaType,
+      title: part.title,
+      ...(part.filename ? { filename: part.filename } : {}),
+    } as UIMessageChunk,
+  ]
+}
+
+function usageFromMetadata(value: unknown): TokenUsage | undefined {
+  const metadata = recordFromUnknown(value)
+  return (
+    tokenUsageFromUnknown(metadata.totalUsage) ??
+    tokenUsageFromUnknown(metadata.usage)
+  )
+}
+
+function metadataFromStoredMessage(msg: Record<string, unknown>) {
+  const metadata = { ...recordFromUnknown(msg.metadata) }
+  const content = recordFromUnknown(msg.content)
+  const nested = recordFromUnknown(content.metadata)
+  const usage =
+    tokenUsageFromUnknown(metadata.totalUsage) ??
+    tokenUsageFromUnknown(metadata.usage) ??
+    tokenUsageFromUnknown(nested.totalUsage) ??
+    tokenUsageFromUnknown(nested.usage) ??
+    tokenUsageFromUnknown(content.usage)
+  const totalUsage =
+    tokenUsageFromUnknown(metadata.totalUsage) ??
+    tokenUsageFromUnknown(nested.totalUsage) ??
+    usage
+  const modelId =
+    textOf(metadata.modelId) ||
+    textOf(nested.modelId) ||
+    textOf(content.modelId)
+  if (usage) metadata.usage = usage
+  if (totalUsage) metadata.totalUsage = totalUsage
+  if (modelId) metadata.modelId = modelId
+  return metadata
+}
+
+function finishReasonFromPayload(
+  chunk: MastraChunk,
+  data: Record<string, unknown>
+): FinishReason | undefined {
+  const stepResult = recordFromUnknown(data.stepResult)
+  const reason =
+    textOf(stepResult.reason) ||
+    textOf(data.finishReason) ||
+    textOf(chunk.finishReason)
+  if (!reason) return undefined
+  return FINISH_REASONS.has(reason as FinishReason)
+    ? (reason as FinishReason)
+    : "other"
+}
+
 export function userMessageFromData(data: unknown) {
   const record = recordFromUnknown(data)
   const nested = recordFromUnknown(record.data)
@@ -87,9 +419,7 @@ export function userTextFromMessage(message: UIMessage) {
     .trim()
 }
 
-export function mastraChunkToUiChunks(
-  chunk: MastraChunk
-): UIMessageChunk[] {
+export function mastraChunkToUiChunks(chunk: MastraChunk): UIMessageChunk[] {
   const data = recordOf(chunk)
   const id = textOf(data.id) || "text"
 
@@ -127,56 +457,69 @@ export function mastraChunkToUiChunks(
       return [{ type: "reasoning-delta", id, delta: textOf(data.text) }]
     case "reasoning-end":
       return [{ type: "reasoning-end", id }]
-    case "tool-call-input-streaming-start":
+    case "tool-call-input-streaming-start": {
+      const tool = toolCallFields(chunk, data)
+      if (!tool.toolCallId) return []
       return [
         {
           type: "tool-input-start",
-          toolCallId: textOf(data.toolCallId),
-          toolName: textOf(data.toolName),
+          toolCallId: tool.toolCallId,
+          toolName: tool.toolName,
+          ...(tool.dynamic ? { dynamic: true } : {}),
         },
       ]
-    case "tool-call-delta":
+    }
+    case "tool-call-delta": {
+      const tool = toolCallFields(chunk, data)
+      const inputTextDelta = toolInputDelta(chunk, data)
+      if (!tool.toolCallId || !inputTextDelta) return []
       return [
         {
           type: "tool-input-delta",
-          toolCallId: textOf(data.toolCallId),
-          inputTextDelta: textOf(data.argsTextDelta),
+          toolCallId: tool.toolCallId,
+          inputTextDelta,
         },
       ]
+    }
     case "tool-call-input-streaming-end":
+      // Streaming-end has no args. Publishing tool-input-available here would
+      // overwrite streamed input with null in the AI SDK UI message.
+      return []
+    case "tool-call": {
+      const tool = toolCallFields(chunk, data)
+      if (!tool.toolCallId || !tool.toolName) return []
       return [
         {
           type: "tool-input-available",
-          toolCallId: textOf(data.toolCallId),
-          toolName: textOf(data.toolName),
-          input: data.args,
+          toolCallId: tool.toolCallId,
+          toolName: tool.toolName,
+          input: tool.input,
+          ...(tool.dynamic ? { dynamic: true } : {}),
         } as UIMessageChunk,
       ]
-    case "tool-call":
-      return [
-        {
-          type: "tool-input-available",
-          toolCallId: textOf(data.toolCallId),
-          toolName: textOf(data.toolName),
-          input: data.args,
-        } as UIMessageChunk,
-      ]
-    case "tool-result":
+    }
+    case "tool-result": {
+      const tool = toolCallFields(chunk, data)
+      if (!tool.toolCallId) return []
       return [
         {
           type: "tool-output-available",
-          toolCallId: textOf(data.toolCallId),
-          output: data.result,
+          toolCallId: tool.toolCallId,
+          output: data.result ?? data.output,
         } as UIMessageChunk,
       ]
-    case "tool-error":
+    }
+    case "tool-error": {
+      const tool = toolCallFields(chunk, data)
+      if (!tool.toolCallId) return []
       return [
         {
           type: "tool-output-error",
-          toolCallId: textOf(data.toolCallId),
+          toolCallId: tool.toolCallId,
           errorText: String(data.error ?? "Tool error"),
         } as UIMessageChunk,
       ]
+    }
     case "tool-call-approval":
       return [
         {
@@ -186,26 +529,29 @@ export function mastraChunkToUiChunks(
         },
       ]
     case "source":
-      if (data.sourceType === "url" || data.url) {
-        return [
-          {
-            type: "source-url",
-            sourceId: textOf(data.id) || textOf(data.url),
-            url: textOf(data.url),
-            title: textOf(data.title) || undefined,
-          } as UIMessageChunk,
-        ]
-      }
+    case "source-url":
+    case "source-document":
+      return sourceChunksFromRecord({ ...data, type: chunk.type })
+    case "step-finish": {
+      const metadata = usageMetadataFromPayload(data)
+      return [
+        { type: "finish-step" },
+        ...(metadata
+          ? [{ type: "message-metadata" as const, messageMetadata: metadata }]
+          : []),
+      ]
+    }
+    case "finish": {
+      const finishReason = finishReasonFromPayload(chunk, data)
+      const messageMetadata = usageMetadataFromPayload(data)
       return [
         {
-          type: "source-document",
-          sourceId: textOf(data.id),
-          mediaType: textOf(data.mimeType) || "application/octet-stream",
-          title: textOf(data.title) || "source",
-        } as UIMessageChunk,
+          type: "finish",
+          ...(finishReason ? { finishReason } : {}),
+          ...(messageMetadata ? { messageMetadata } : {}),
+        },
       ]
-    case "finish":
-      return [{ type: "finish" }]
+    }
     case "abort":
       return [{ type: "abort" }]
     case "error":
@@ -234,17 +580,18 @@ function asParts(value: unknown): UIMessage["parts"] {
     } else if (record.type === "reasoning" && typeof record.text === "string") {
       parts.push({ type: "reasoning", text: record.text })
     } else if (
-      typeof record.type === "string" &&
-      record.type.startsWith("tool-")
+      record.type === "dynamic-tool" ||
+      (typeof record.type === "string" && record.type.startsWith("tool-"))
     ) {
-      parts.push(record as UIMessage["parts"][number])
-    } else if (record.type === "source" || record.type === "source-url") {
-      parts.push({
-        type: "source-url",
-        sourceId: String(record.id ?? record.url ?? ""),
-        url: String(record.url ?? ""),
-        title: typeof record.title === "string" ? record.title : undefined,
-      })
+      const toolPart = toolPartFromRecord(record)
+      if (toolPart) parts.push(toolPart)
+    } else if (
+      record.type === "source" ||
+      record.type === "source-url" ||
+      record.type === "source-document"
+    ) {
+      const sourcePart = sourcePartFromRecord(record)
+      if (sourcePart) parts.push(sourcePart)
     }
   }
   return parts
@@ -275,11 +622,13 @@ export function toUiMessages(messages: unknown): UIMessage[] {
         if (incoming) parts = [{ type: "text", text: incoming.text }]
       }
     }
+    const metadata = metadataFromStoredMessage(msg)
     return [
       {
         id: String(msg.id ?? crypto.randomUUID()),
         role,
         parts,
+        ...(Object.keys(metadata).length ? { metadata } : {}),
       } satisfies UIMessage,
     ]
   })
