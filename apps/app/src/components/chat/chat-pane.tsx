@@ -365,59 +365,61 @@ function ChatPaneReady({
 
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
-      <Conversation className="min-h-0">
-        <ConversationContent>
-          {messages.length === 0 ? (
-            <ConversationEmptyState
-              title={t("emptyTitle")}
-              description={t("emptyDescription")}
-            >
-              {prompts.length > 0 ? (
-                <div className="flex flex-wrap justify-center gap-2">
-                  {prompts.map((prompt) => (
-                    <Button
-                      key={prompt}
-                      size="sm"
-                      variant="outline"
-                      onClick={() => void submitPrompt(prompt)}
-                    >
-                      {prompt}
-                    </Button>
-                  ))}
-                </div>
-              ) : null}
-            </ConversationEmptyState>
-          ) : (
-            messages.map((message) => (
-              <Message from={message.role} key={message.id}>
-                <MessageParts
-                  message={message}
-                  agentId={agentId}
-                  threadId={threadId}
-                  resourceId={resourceId}
-                />
-              </Message>
-            ))
-          )}
-        </ConversationContent>
-        <ConversationScrollButton />
-      </Conversation>
-      <div className="shrink-0 border-t bg-background p-3">
-        <MessageQueue label={t("queued")} messages={queuedMessages} />
-        <PromptInput
-          className={queuedMessages.length > 0 ? "rounded-t-none" : undefined}
-          onSubmit={async ({ text }) => {
-            if (!text?.trim()) return
-            await submitPrompt(text)
-          }}
-        >
-          <PromptInputBody>
-            <PromptInputTextarea placeholder={t("promptPlaceholder")} />
-          </PromptInputBody>
-          <PromptInputFooter>
-            <PromptInputSubmit onStop={stop} status={status} />
-          </PromptInputFooter>
-        </PromptInput>
+      <div className="mx-auto flex min-h-0 w-full max-w-prose flex-1 flex-col">
+        <Conversation className="min-h-0">
+          <ConversationContent>
+            {messages.length === 0 ? (
+              <ConversationEmptyState
+                title={t("emptyTitle")}
+                description={t("emptyDescription")}
+              >
+                {prompts.length > 0 ? (
+                  <div className="flex flex-wrap justify-center gap-2">
+                    {prompts.map((prompt) => (
+                      <Button
+                        key={prompt}
+                        size="sm"
+                        variant="outline"
+                        onClick={() => void submitPrompt(prompt)}
+                      >
+                        {prompt}
+                      </Button>
+                    ))}
+                  </div>
+                ) : null}
+              </ConversationEmptyState>
+            ) : (
+              messages.map((message) => (
+                <Message from={message.role} key={message.id}>
+                  <MessageParts
+                    message={message}
+                    agentId={agentId}
+                    threadId={threadId}
+                    resourceId={resourceId}
+                  />
+                </Message>
+              ))
+            )}
+          </ConversationContent>
+          <ConversationScrollButton />
+        </Conversation>
+        <div className="shrink-0 border-t bg-background p-3">
+          <MessageQueue label={t("queued")} messages={queuedMessages} />
+          <PromptInput
+            className={queuedMessages.length > 0 ? "rounded-t-none" : undefined}
+            onSubmit={async ({ text }) => {
+              if (!text?.trim()) return
+              await submitPrompt(text)
+            }}
+          >
+            <PromptInputBody>
+              <PromptInputTextarea placeholder={t("promptPlaceholder")} />
+            </PromptInputBody>
+            <PromptInputFooter>
+              <PromptInputSubmit onStop={stop} status={status} />
+            </PromptInputFooter>
+          </PromptInput>
+        </div>
       </div>
     </div>
   )

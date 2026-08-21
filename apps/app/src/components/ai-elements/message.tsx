@@ -331,6 +331,7 @@ export const MessageResponse = memo(
         className
       )}
       plugins={streamdownPlugins as never}
+      shikiTheme={["github-light", "github-dark"]}
       {...props}
     />
   ),

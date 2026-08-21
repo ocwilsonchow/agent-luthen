@@ -5,7 +5,7 @@ const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts")
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
-  transpilePackages: ["@repo/auth", "@repo/infra"],
+  transpilePackages: ["@repo/auth", "@repo/infra", "shiki"],
 }
 
 export default withNextIntl(nextConfig)

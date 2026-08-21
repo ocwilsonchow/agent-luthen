@@ -21,6 +21,15 @@ import { isValidElement } from "react";
 
 import { CodeBlock } from "./code-block";
 
+function jsonCode(value: unknown) {
+  try {
+    const serialized = JSON.stringify(value ?? null, null, 2)
+    return typeof serialized === "string" ? serialized : "null"
+  } catch {
+    return String(value)
+  }
+}
+
 export type ToolProps = ComponentProps<typeof Collapsible>;
 
 export const Tool = ({ className, ...props }: ToolProps) => (
@@ -122,7 +131,7 @@ export const ToolInput = ({ className, input, ...props }: ToolInputProps) => (
       Parameters
     </h4>
     <div className="rounded-md bg-muted/50">
-      <CodeBlock code={JSON.stringify(input, null, 2)} language="json" />
+      <CodeBlock code={jsonCode(input)} language="json" />
     </div>
   </div>
 );
@@ -146,7 +155,7 @@ export const ToolOutput = ({
 
   if (typeof output === "object" && !isValidElement(output)) {
     Output = (
-      <CodeBlock code={JSON.stringify(output, null, 2)} language="json" />
+      <CodeBlock code={jsonCode(output)} language="json" />
     );
   } else if (typeof output === "string") {
     Output = <CodeBlock code={output} language="json" />;

@@ -28,6 +28,7 @@ import type {
   ThemedToken,
 } from "shiki";
 import { createHighlighter } from "shiki";
+import { createJavaScriptRegexEngine } from "shiki/engine/javascript";
 
 // Shiki uses bitflags for font styles: 1=italic, 2=bold, 4=underline
 // oxlint-disable-next-line eslint(no-bitwise)
@@ -129,6 +130,8 @@ const CodeBlockContext = createContext<CodeBlockContextType>({
   code: "",
 });
 
+const shikiEngine = createJavaScriptRegexEngine({ forgiving: true });
+
 // Highlighter cache (singleton per language)
 const highlighterCache = new Map<
   string,
@@ -156,6 +159,7 @@ const getHighlighter = (
   }
 
   const highlighterPromise = createHighlighter({
+    engine: shikiEngine,
     langs: [language],
     themes: ["github-light", "github-dark"],
   });
@@ -165,20 +169,23 @@ const getHighlighter = (
 };
 
 // Create raw tokens for immediate display while highlighting loads
-const createRawTokens = (code: string): TokenizedCode => ({
-  bg: "transparent",
-  fg: "inherit",
-  tokens: code.split("\n").map((line) =>
-    line === ""
-      ? []
-      : [
-          {
-            color: "inherit",
-            content: line,
-          } as ThemedToken,
-        ]
-  ),
-});
+const createRawTokens = (code: string): TokenizedCode => {
+  const source = typeof code === "string" ? code : ""
+  return {
+    bg: "transparent",
+    fg: "inherit",
+    tokens: source.split("\n").map((line) =>
+      line === ""
+        ? []
+        : [
+            {
+              color: "inherit",
+              content: line,
+            } as ThemedToken,
+          ]
+    ),
+  }
+}
 
 // Synchronous highlight with callback for async results
 export const highlightCode = (
@@ -380,32 +387,33 @@ export const CodeBlockContent = ({
   language: BundledLanguage;
   showLineNumbers?: boolean;
 }) => {
+  const source = typeof code === "string" ? code : ""
   // Memoized raw tokens for immediate display
-  const rawTokens = useMemo(() => createRawTokens(code), [code]);
+  const rawTokens = useMemo(() => createRawTokens(source), [source]);
 
   // Synchronous cache lookup — avoids setState in effect for cached results
   const syncTokens = useMemo(
-    () => highlightCode(code, language) ?? rawTokens,
-    [code, language, rawTokens]
+    () => highlightCode(source, language) ?? rawTokens,
+    [source, language, rawTokens]
   );
 
   // Async highlighting result (populated after shiki loads)
   const [asyncTokens, setAsyncTokens] = useState<TokenizedCode | null>(null);
-  const asyncKeyRef = useRef({ code, language });
+  const asyncKeyRef = useRef({ code: source, language });
 
   // Invalidate stale async tokens synchronously during render
   if (
-    asyncKeyRef.current.code !== code ||
+    asyncKeyRef.current.code !== source ||
     asyncKeyRef.current.language !== language
   ) {
-    asyncKeyRef.current = { code, language };
+    asyncKeyRef.current = { code: source, language };
     setAsyncTokens(null);
   }
 
   useEffect(() => {
     let cancelled = false;
 
-    highlightCode(code, language, (result) => {
+    highlightCode(source, language, (result) => {
       if (!cancelled) {
         setAsyncTokens(result);
       }
@@ -414,7 +422,7 @@ export const CodeBlockContent = ({
     return () => {
       cancelled = true;
     };
-  }, [code, language]);
+  }, [source, language]);
 
   const tokenized = asyncTokens ?? syncTokens;
 
@@ -433,14 +441,15 @@ export const CodeBlock = ({
   children,
   ...props
 }: CodeBlockProps) => {
-  const contextValue = useMemo(() => ({ code }), [code]);
+  const source = typeof code === "string" ? code : ""
+  const contextValue = useMemo(() => ({ code: source }), [source]);
 
   return (
     <CodeBlockContext.Provider value={contextValue}>
       <CodeBlockContainer className={className} language={language} {...props}>
         {children}
         <CodeBlockContent
-          code={code}
+          code={source}
           language={language}
           showLineNumbers={showLineNumbers}
         />

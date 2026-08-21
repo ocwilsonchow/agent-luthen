@@ -58,7 +58,9 @@ export function ThreadListItem({
   return (
     <SidebarMenuItem>
       <SidebarMenuButton asChild isActive={isActive}>
-        <Link href={`/agents/${agentId}/${thread.id}`}>{title}</Link>
+        <Link href={`/agents/${agentId}/${thread.id}`}>
+          <span className="line-clamp-1">{title}</span>
+        </Link>
       </SidebarMenuButton>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>

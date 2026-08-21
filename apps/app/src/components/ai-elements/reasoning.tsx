@@ -216,7 +216,12 @@ export const ReasoningContent = memo(
       )}
       {...props}
     >
-      <Streamdown plugins={streamdownPlugins as never}>{children}</Streamdown>
+      <Streamdown
+        plugins={streamdownPlugins as never}
+        shikiTheme={["github-light", "github-dark"]}
+      >
+        {children}
+      </Streamdown>
     </CollapsibleContent>
   )
 );
