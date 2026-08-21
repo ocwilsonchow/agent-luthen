@@ -1,12 +1,14 @@
 "use client"
 
+import { RefChip } from "@/components/chat/inline-source"
 import { MedChip } from "@/components/chat/med-chip"
 import {
+  CALLOUT_INNER_ALLOWED_TAGS,
+  CALLOUT_INNER_LITERAL_TAG_CONTENT,
   CLINICAL_ALLOWED_TAGS,
   CLINICAL_LITERAL_TAG_CONTENT,
   calloutInnerMarkdown,
 } from "@/lib/chat/clinical-tags"
-import { MED_ALLOWED_TAGS, MED_LITERAL_TAG_CONTENT } from "@/lib/chat/med-kind"
 import { cn } from "@/lib/utils"
 import { ShieldCheckIcon, SparklesIcon, TriangleAlertIcon } from "lucide-react"
 import { useTranslations } from "next-intl"
@@ -21,10 +23,10 @@ type CalloutProps = Record<string, unknown> &
 function CalloutMarkdown({ markdown }: { markdown: string }) {
   return (
     <Streamdown
-      allowedTags={MED_ALLOWED_TAGS}
+      allowedTags={CALLOUT_INNER_ALLOWED_TAGS}
       className="space-y-0 [&_ul]:my-0 [&_ol]:my-0"
-      components={{ med: MedChip }}
-      literalTagContent={MED_LITERAL_TAG_CONTENT}
+      components={{ med: MedChip, ref: RefChip }}
+      literalTagContent={CALLOUT_INNER_LITERAL_TAG_CONTENT}
       mode="static"
     >
       {markdown}
@@ -109,6 +111,7 @@ export const assistantMedMarkdown = {
   literalTagContent: CLINICAL_LITERAL_TAG_CONTENT,
   components: {
     med: MedChip,
+    ref: RefChip,
     keypoints: KeyPointsCard,
     safetynotes: SafetyNotesCard,
   },

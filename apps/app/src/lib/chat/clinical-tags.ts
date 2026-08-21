@@ -1,3 +1,7 @@
+import {
+  REF_ALLOWED_TAGS,
+  REF_LITERAL_TAG_CONTENT,
+} from "@/lib/chat/inline-source"
 import { MED_ALLOWED_TAGS, MED_LITERAL_TAG_CONTENT } from "@/lib/chat/med-kind"
 import type { ReactNode } from "react"
 
@@ -5,15 +9,25 @@ export const CLINICAL_CALLOUT_TAGS = ["keypoints", "safetynotes"] as const
 
 export type ClinicalCalloutTag = (typeof CLINICAL_CALLOUT_TAGS)[number]
 
-const STREAM_TAGS = ["keypoints", "safetynotes", "med"] as const
+const STREAM_TAGS = ["keypoints", "safetynotes", "med", "ref"] as const
+
+export const CALLOUT_INNER_ALLOWED_TAGS: Record<string, string[]> = {
+  ...MED_ALLOWED_TAGS,
+  ...REF_ALLOWED_TAGS,
+}
+
+export const CALLOUT_INNER_LITERAL_TAG_CONTENT = [
+  ...MED_LITERAL_TAG_CONTENT,
+  ...REF_LITERAL_TAG_CONTENT,
+]
 
 export const CLINICAL_ALLOWED_TAGS: Record<string, string[]> = {
-  ...MED_ALLOWED_TAGS,
+  ...CALLOUT_INNER_ALLOWED_TAGS,
   keypoints: [],
   safetynotes: [],
 }
 
-export const CLINICAL_LITERAL_TAG_CONTENT = MED_LITERAL_TAG_CONTENT
+export const CLINICAL_LITERAL_TAG_CONTENT = CALLOUT_INNER_LITERAL_TAG_CONTENT
 
 function isTagBoundary(char: string | undefined) {
   return (
@@ -64,7 +78,7 @@ type HastLike = {
   children?: HastLike[]
 }
 
-/** Reconstruct inner markdown/HTML so a nested Streamdown can parse lists and `<med>`. */
+/** Reconstruct inner markdown/HTML so a nested Streamdown can parse lists, `<med>`, and `<ref>`. */
 export function calloutInnerMarkdown(node: unknown): string {
   if (!node || typeof node !== "object" || !("children" in node)) return ""
   const children = (node as HastLike).children

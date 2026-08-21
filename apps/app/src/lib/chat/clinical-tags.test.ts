@@ -14,10 +14,10 @@ import {
 } from "./clinical-tags"
 
 describe("closeIncompleteClinicalTags", () => {
-  test("leaves complete med and callout tags unchanged", () => {
+  test("leaves complete med, ref, and callout tags unchanged", () => {
     const markdown = [
       "<keypoints>",
-      '- Use <med kind="generic">metformin</med>.',
+      '- Use <med kind="generic">metformin</med>. <ref url="https://nice.org.uk/metformin">NICE</ref>',
       "</keypoints>",
       "<safetynotes>",
       "- Check renal function.",
@@ -46,10 +46,23 @@ describe("closeIncompleteClinicalTags", () => {
     ).toBe(`<keypoints>\n- Use <med kind="generic">metform</med>`)
   })
 
+  test("closes a truncated ref body", () => {
+    expect(
+      closeIncompleteClinicalTags(
+        `Duration: 5–7 days. <ref url="https://nice.org.uk/metformin">NICE`
+      )
+    ).toBe(
+      `Duration: 5–7 days. <ref url="https://nice.org.uk/metformin">NICE</ref>`
+    )
+  })
+
   test("drops an unclosed opening tag still being typed", () => {
     expect(closeIncompleteClinicalTags(`Intro <keypoints`)).toBe("Intro ")
     expect(closeIncompleteClinicalTags(`Intro <safetynotes`)).toBe("Intro ")
     expect(closeIncompleteClinicalTags(`Take <med kind="bra`)).toBe("Take ")
+    expect(closeIncompleteClinicalTags(`Duration <ref url="htt`)).toBe(
+      "Duration "
+    )
   })
 })
 
@@ -88,6 +101,27 @@ describe("calloutInnerMarkdown", () => {
         ],
       })
     ).toBe('- Use <med kind="generic">metformin</med>.')
+  })
+
+  test("serializes nested ref tags", () => {
+    expect(
+      calloutInnerMarkdown({
+        type: "element",
+        tagName: "keypoints",
+        children: [
+          { type: "text", value: "\n- Duration 5–7 days. " },
+          {
+            type: "element",
+            tagName: "ref",
+            properties: { url: "https://nice.org.uk/metformin" },
+            children: [{ type: "text", value: "NICE" }],
+          },
+          { type: "text", value: "\n" },
+        ],
+      })
+    ).toBe(
+      '- Duration 5–7 days. <ref url="https://nice.org.uk/metformin">NICE</ref>'
+    )
   })
 })
 

@@ -36,7 +36,7 @@ export function AgentTaskList({ tasks }: { tasks: AgentTask[] }) {
   const title = t("taskProgress", { completed, total: tasks.length })
 
   return (
-    <div className="shrink-0 border-b bg-background px-4 py-3">
+    <div className="mb-3">
       <Task defaultOpen>
         <TaskTrigger title={title}>
           <div className="flex w-full cursor-pointer items-center gap-2 text-muted-foreground text-sm transition-colors hover:text-foreground">

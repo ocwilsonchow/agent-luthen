@@ -1,7 +1,7 @@
+import { RequestContext } from "@mastra/client-js"
 import type { AppLocale } from "@/i18n/routing"
 import { getMastraClient } from "@/lib/mastra/client"
 
-export const SUGGESTED_PROMPT_COUNT = 3
 const FOLLOW_UP_COUNT = 5
 const FOLLOW_UP_EXCERPT_MAX = 3000
 
@@ -13,6 +13,10 @@ const localeLanguage: Record<AppLocale, string> = {
 
 /** HTTP generate only accepts boolean `jsonPromptInjection`, not `'auto'`. */
 export const suggestedPromptJsonPromptInjection = true
+
+/** Selects the agent's fast Gateway model instead of the default chat model. */
+export const suggestedPromptRequestContext = new RequestContext()
+suggestedPromptRequestContext.setRaw("useFastModel", true)
 
 export function promptsFromUnknown(value: unknown): string[] {
   if (Array.isArray(value)) {
@@ -48,6 +52,7 @@ export function excerptForFollowUps(
 ): string {
   const stripped = text
     .replace(/<\/?med\b[^>]*>/gi, "")
+    .replace(/<\/?ref\b[^>]*>/gi, "")
     .replace(/<\/?keypoints\b[^>]*>/gi, "")
     .replace(/<\/?safetynotes\b[^>]*>/gi, "")
     .trim()
@@ -60,7 +65,6 @@ async function generateStructuredPrompts(input: {
   locale: AppLocale
   count: number
   prompt: string
-  exclude?: string[]
 }): Promise<string[]> {
   const language = localeLanguage[input.locale] ?? localeLanguage.en
   const result = await getMastraClient()
@@ -72,7 +76,7 @@ async function generateStructuredPrompts(input: {
         toolChoice: "none",
         activeTools: [],
         instructions:
-          "You write short suggested conversation starters. Do not call tools. Do not wrap text in tags. Return only the structured prompts.",
+          "You write short follow-up questions. Do not call tools. Do not wrap text in tags. Return only the structured prompts.",
         structuredOutput: {
           schema: {
             type: "object",
@@ -87,51 +91,21 @@ async function generateStructuredPrompts(input: {
           },
           jsonPromptInjection: suggestedPromptJsonPromptInjection,
         },
+        requestContext: suggestedPromptRequestContext,
         modelSettings: {
           temperature: 1.1,
         },
       }
     )
 
-  const prompts = uniquePrompts(
-    promptsFromUnknown(result.object),
-    input.exclude
-  ).slice(0, input.count)
+  const prompts = uniquePrompts(promptsFromUnknown(result.object)).slice(
+    0,
+    input.count
+  )
   if (prompts.length === 0) {
     throw new Error("No suggested prompts were generated")
   }
   return prompts
-}
-
-export async function generateSuggestedPrompts(input: {
-  agentId: string
-  agentName?: string
-  agentDescription?: string
-  locale: AppLocale
-  exclude?: string[]
-}): Promise<string[]> {
-  const exclude = input.exclude ?? []
-  return generateStructuredPrompts({
-    agentId: input.agentId,
-    locale: input.locale,
-    count: SUGGESTED_PROMPT_COUNT,
-    exclude,
-    prompt: [
-      `Generate ${SUGGESTED_PROMPT_COUNT} suggested user prompts for this assistant.`,
-      input.agentName ? `Assistant: ${input.agentName}` : null,
-      input.agentDescription ? `Description: ${input.agentDescription}` : null,
-      exclude.length > 0
-        ? `Do not repeat or closely paraphrase these:\n${exclude
-            .map((prompt) => `- ${prompt}`)
-            .join("\n")}`
-        : null,
-      "Requirements:",
-      "- Match the assistant's domain and the questions its users typically ask.",
-      "- Each prompt is one concise question or request a user would click to start a conversation.",
-    ]
-      .filter((line): line is string => line !== null)
-      .join("\n"),
-  })
 }
 
 export async function generateFollowUps(input: {

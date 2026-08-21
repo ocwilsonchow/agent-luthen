@@ -3,6 +3,7 @@ import {
   excerptForFollowUps,
   promptsFromUnknown,
   suggestedPromptJsonPromptInjection,
+  suggestedPromptRequestContext,
   uniquePrompts,
 } from "./suggested-prompts"
 
@@ -62,6 +63,12 @@ describe("suggestedPromptJsonPromptInjection", () => {
   })
 })
 
+describe("suggestedPromptRequestContext", () => {
+  test("requests the fast model", () => {
+    expect(suggestedPromptRequestContext.getRaw("useFastModel")).toBe(true)
+  })
+})
+
 describe("excerptForFollowUps", () => {
   test("strips med tags and truncates", () => {
     expect(excerptForFollowUps("First-line metformin is used.", 20)).toBe(
@@ -72,5 +79,13 @@ describe("excerptForFollowUps", () => {
         `First-line <med kind="generic">metformin</med> is used.`
       )
     ).toBe("First-line metformin is used.")
+  })
+
+  test("strips ref tags", () => {
+    expect(
+      excerptForFollowUps(
+        `Duration: 5–7 days. <ref url="https://bestpractice.bmj.com/topics/en-gb/8">BMJ Best Practice</ref>`
+      )
+    ).toBe("Duration: 5–7 days. BMJ Best Practice")
   })
 })

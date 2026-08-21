@@ -1,7 +1,6 @@
 "use client"
 
 import { CornerDownRightIcon } from "lucide-react"
-import type { ReactNode } from "react"
 import { cn } from "@/lib/utils"
 
 export function FollowUpList({
@@ -10,7 +9,6 @@ export function FollowUpList({
   pending = false,
   disabled = false,
   skeletonCount = 5,
-  headerAction,
   onSelect,
   className,
 }: {
@@ -19,19 +17,15 @@ export function FollowUpList({
   pending?: boolean
   disabled?: boolean
   skeletonCount?: number
-  headerAction?: ReactNode
   onSelect: (item: string) => void
   className?: string
 }) {
   const showSkeleton = pending && items.length === 0
-  if (!showSkeleton && items.length === 0 && !headerAction) return null
+  if (!showSkeleton && items.length === 0) return null
 
   return (
     <section className={cn("w-full text-left", className)}>
-      <div className="mb-1 flex items-center justify-between gap-2">
-        <h3 className="font-semibold text-sm">{title}</h3>
-        {headerAction}
-      </div>
+      <h3 className="mb-1 font-semibold text-sm">{title}</h3>
       {showSkeleton || items.length > 0 ? (
         <ul className={cn("border-border border-t", pending && "opacity-60")}>
           {showSkeleton

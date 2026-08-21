@@ -54,8 +54,8 @@ import type { QueueMessage } from "@/components/ai-elements/queue"
 import { Badge } from "@/components/ui/badge"
 import { AgentTaskList } from "@/components/chat/agent-task-list"
 import { MessageFollowUps } from "@/components/chat/message-follow-ups"
-import { SuggestedPrompts } from "@/components/chat/suggested-prompts"
 import { assistantMedMarkdown } from "@/components/chat/clinical-callout"
+import { SourceLookupProvider } from "@/components/chat/inline-source"
 import { MessageQueue } from "@/components/chat/message-queue"
 import { MessageSources } from "@/components/chat/message-sources"
 import { MessageUsage } from "@/components/chat/message-usage"
@@ -66,6 +66,7 @@ import {
   hasVisibleChatParts,
 } from "@/lib/chat/agent-tasks"
 import { closeIncompleteClinicalTags } from "@/lib/chat/clinical-tags"
+import { sourcesFromMessage } from "@/lib/chat/message-sources"
 import { MastraThreadTransport } from "@/lib/chat/mastra-thread-transport"
 import { getMastraClient } from "@/lib/mastra/client"
 import {
@@ -98,16 +99,19 @@ function MessageParts({
 }) {
   const t = useTranslations("chat")
   const approval = useMutation(toolApprovalMutationOptions)
+  const sources = useMemo(() => sourcesFromMessage(message), [message])
 
   return (
-    <>
+    <SourceLookupProvider sources={sources}>
       {message.parts.map((part, index) => {
         if (part.type === "text") {
           const isAssistant = message.role === "assistant"
           return (
             <MessageContent key={`${message.id}-text-${index}`}>
               <MessageResponse {...(isAssistant ? assistantMedMarkdown : {})}>
-                {isAssistant ? closeIncompleteClinicalTags(part.text) : part.text}
+                {isAssistant
+                  ? closeIncompleteClinicalTags(part.text)
+                  : part.text}
               </MessageResponse>
             </MessageContent>
           )
@@ -196,7 +200,7 @@ function MessageParts({
       })}
       <MessageSources message={message} />
       <MessageUsage message={message} modelId={modelId} provider={provider} />
-    </>
+    </SourceLookupProvider>
   )
 }
 
@@ -388,22 +392,13 @@ function ChatPaneReady({
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
       <div className="flex min-h-0 w-full flex-1 flex-col">
-        <div className="mx-auto w-full max-w-prose">
-          <AgentTaskList tasks={tasks} />
-        </div>
         <Conversation className="min-h-0">
           <ConversationContent>
             {visibleMessages.length === 0 && !showThinking ? (
               <ConversationEmptyState
                 title={t("emptyTitle")}
                 description={t("emptyDescription")}
-              >
-                <SuggestedPrompts
-                  agentId={agentId}
-                  agent={agentQuery.data}
-                  onSelect={submitPrompt}
-                />
-              </ConversationEmptyState>
+              />
             ) : (
               <>
                 {visibleMessages.map((message) => {
@@ -441,6 +436,7 @@ function ChatPaneReady({
           <ConversationScrollButton />
         </Conversation>
         <div className="mx-auto w-full max-w-prose shrink-0 border-t bg-background py-3">
+          <AgentTaskList tasks={tasks} />
           <MessageQueue label={t("queued")} messages={queuedMessages} />
           <PromptInput
             className={queuedMessages.length > 0 ? "rounded-t-none" : undefined}

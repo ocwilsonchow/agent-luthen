@@ -5,7 +5,7 @@ import {
   createDurableAgent,
   createEventedAgent,
 } from "@mastra/core/agent/durable"
-import { vercelModels } from "../../models"
+import { FAST_MODEL_REQUEST_KEY, vercelModels } from "../../models"
 import { tavilyExtractTool, tavilySearchTool } from "../../tools/tavily-tools"
 import { description, instructions } from "./prompts"
 
@@ -14,7 +14,10 @@ export const clinicalResearchAgent = new Agent({
   name: "Clinical Guidelines Researcher",
   description,
   instructions,
-  model: vercelModels.base,
+  model: ({ requestContext }) =>
+    requestContext.get(FAST_MODEL_REQUEST_KEY)
+      ? vercelModels.fast
+      : vercelModels.base,
   defaultOptions: {
     maxSteps: 100,
     autoResumeSuspendedTools: true,
