@@ -33,16 +33,16 @@ export function configureOpenAPI(app: AppOpenAPI) {
       persistAuth: true,
       sources: [
         {
-          url: "/doc",
-          title: "App",
+          url: "/api/mastra/openapi.json",
+          title: "Mastra",
         },
         {
           url: "/api/auth/open-api/generate-schema",
           title: "Auth",
         },
         {
-          url: "/api/mastra/openapi.json",
-          title: "Mastra",
+          url: "/doc",
+          title: "App",
         },
       ],
     })
