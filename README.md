@@ -24,11 +24,11 @@ flowchart LR
 
 Local ports (from `packages/infra/ports.ts`):
 
-| Service        | Port | URL                     |
-| -------------- | ---- | ----------------------- |
-| Web app        | 3000 | http://localhost:3000   |
-| API            | 3001 | http://localhost:3001   |
-| Mastra Studio  | 3002 | http://localhost:3002   |
+| Service       | Port | URL                   |
+| ------------- | ---- | --------------------- |
+| Web app       | 3000 | http://localhost:3000 |
+| API           | 3001 | http://localhost:3001 |
+| Mastra Studio | 3002 | http://localhost:3002 |
 
 Non-local stages use `{stage}.agent-luthen.slchow.com` for the web app and `{stage}.api.agent-luthen.slchow.com` for the API.
 
@@ -124,14 +124,14 @@ bun run deploy:dev     # sst deploy --stage dev
 
 Declared in `packages/infra/secrets.ts` and linked into the API service.
 
-| Secret               | Used for                                      |
-| -------------------- | --------------------------------------------- |
-| `BETTER_AUTH_SECRET` | Session signing                               |
-| `DATABASE_URL`       | Postgres for auth and Mastra storage          |
-| `AI_GATEWAY_API_KEY` | Vercel AI Gateway (LLM calls)                 |
-| `LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY` / `LANGFUSE_BASE_URL` | Mastra observability |
-| `TAVILY_API_KEY`     | Agent web search / extract                    |
-| `PINECONE_API_KEY`   | Linked to the API; not used by app code yet   |
+| Secret                                                              | Used for                                    |
+| ------------------------------------------------------------------- | ------------------------------------------- |
+| `BETTER_AUTH_SECRET`                                                | Session signing                             |
+| `DATABASE_URL`                                                      | Postgres for auth and Mastra storage        |
+| `AI_GATEWAY_API_KEY`                                                | Vercel AI Gateway (LLM calls)               |
+| `LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY` / `LANGFUSE_BASE_URL` | Mastra observability                        |
+| `TAVILY_API_KEY`                                                    | Agent web search / extract                  |
+| `PINECONE_API_KEY`                                                  | Linked to the API; not used by app code yet |
 
 Web env (injected by SST in `packages/infra/app.ts`):
 

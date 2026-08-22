@@ -31,13 +31,7 @@ import {
   MessageContent,
   MessageResponse,
 } from "@/components/ai-elements/message"
-import {
-  PromptInput,
-  PromptInputBody,
-  PromptInputFooter,
-  PromptInputSubmit,
-  PromptInputTextarea,
-} from "@/components/ai-elements/prompt-input"
+import { PromptComposer } from "@/components/chat/prompt-completions"
 import {
   Reasoning,
   ReasoningContent,
@@ -438,20 +432,13 @@ function ChatPaneReady({
         <div className="mx-auto w-full max-w-prose shrink-0 border-t bg-background py-3">
           <AgentTaskList tasks={tasks} />
           <MessageQueue label={t("queued")} messages={queuedMessages} />
-          <PromptInput
+          <PromptComposer
             className={queuedMessages.length > 0 ? "rounded-t-none" : undefined}
-            onSubmit={async ({ text }) => {
-              if (!text?.trim()) return
-              await submitPrompt(text)
-            }}
-          >
-            <PromptInputBody>
-              <PromptInputTextarea placeholder={t("promptPlaceholder")} />
-            </PromptInputBody>
-            <PromptInputFooter>
-              <PromptInputSubmit onStop={stop} status={status} />
-            </PromptInputFooter>
-          </PromptInput>
+            placeholder={t("promptPlaceholder")}
+            status={status}
+            onStop={stop}
+            onSubmit={submitPrompt}
+          />
         </div>
       </div>
     </div>

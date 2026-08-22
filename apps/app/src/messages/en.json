@@ -65,6 +65,7 @@
     "usageOutput": "Output",
     "usageReasoning": "Reasoning",
     "usageCached": "Cached",
+    "completionsLabel": "Prompt suggestions",
     "thinking": "Thinking",
     "keyPoints": "Key points",
     "keySafetyNotes": "Key Safety Notes",

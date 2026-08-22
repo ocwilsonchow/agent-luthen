@@ -10,10 +10,7 @@ import { getMastraClient } from "@/lib/mastra/client"
 
 export type ThreadConnection = "connecting" | "connected" | "disconnected"
 export type ThreadDisplayStatus =
-  | "connecting"
-  | "connected"
-  | "disconnected"
-  | "streaming"
+  "connecting" | "connected" | "disconnected" | "streaming"
 
 export type ThreadHubSnapshot = {
   connection: ThreadConnection
@@ -329,7 +326,9 @@ function waitForTurnStream(
       if (settled || hub.enqueueStreams > 0) return
       if (chunk) {
         if (isRunStartChunk(chunk) || !isTerminalMastraChunk(chunk)) {
-          finish(chunksToUiStream(hub, abortSignal, { abortRun, enqueue: true }))
+          finish(
+            chunksToUiStream(hub, abortSignal, { abortRun, enqueue: true })
+          )
         }
         return
       }

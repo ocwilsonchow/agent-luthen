@@ -65,6 +65,7 @@
     "usageOutput": "輸出",
     "usageReasoning": "推理",
     "usageCached": "快取",
+    "completionsLabel": "提示補全",
     "thinking": "思考中",
     "keyPoints": "重點",
     "keySafetyNotes": "關鍵安全提示",

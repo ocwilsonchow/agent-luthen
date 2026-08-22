@@ -6,10 +6,7 @@ import {
   SourcesContent,
   SourcesTrigger,
 } from "@/components/ai-elements/sources"
-import {
-  sourceDisplay,
-  sourcesFromMessage,
-} from "@/lib/chat/message-sources"
+import { sourceDisplay, sourcesFromMessage } from "@/lib/chat/message-sources"
 import type { UIMessage } from "ai"
 import { ArrowUpRightIcon, ChevronDownIcon, Link2Icon } from "lucide-react"
 import { useTranslations } from "next-intl"

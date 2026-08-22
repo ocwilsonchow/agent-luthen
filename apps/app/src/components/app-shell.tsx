@@ -1,7 +1,11 @@
 "use client"
 
 import { ThreadConnectionStatus } from "@/components/chat/thread-connection-status"
-import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
 
 export function AppShell({

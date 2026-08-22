@@ -1,4 +1,9 @@
-import { getToolName, isReasoningUIPart, isToolUIPart, type UIMessage } from "ai"
+import {
+  getToolName,
+  isReasoningUIPart,
+  isToolUIPart,
+  type UIMessage,
+} from "ai"
 
 export const TASK_TOOL_IDS = [
   "task_write",
@@ -36,7 +41,8 @@ export function hasVisibleChatParts(message: UIMessage) {
   return message.parts.some((part) => {
     if (part.type === "text") return Boolean(part.text.trim())
     if (isReasoningUIPart(part)) return true
-    if (part.type === "source-url" || part.type === "source-document") return true
+    if (part.type === "source-url" || part.type === "source-document")
+      return true
     if (isToolUIPart(part)) return !isTaskToolPart(part)
     return false
   })
