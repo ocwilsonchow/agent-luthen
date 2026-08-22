@@ -44,6 +44,9 @@
     "followUps": "追問",
     "promptPlaceholder": "向研究代理提問…",
     "queued": "排隊中",
+    "audience": "讀者模式",
+    "audienceProfessional": "專業",
+    "audiencePublic": "公眾",
     "connection": {
       "connecting": "正在連線",
       "connected": "已連線",

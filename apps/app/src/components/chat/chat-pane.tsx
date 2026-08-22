@@ -9,8 +9,9 @@ import {
   type UIMessage,
 } from "ai"
 import { useMemo, useEffect, useRef, useState } from "react"
-import { useTranslations } from "next-intl"
+import { useLocale, useTranslations } from "next-intl"
 import { useRouter } from "@/i18n/navigation"
+import type { AppLocale } from "@/i18n/routing"
 import {
   Confirmation,
   ConfirmationAccepted,
@@ -61,6 +62,7 @@ import {
 } from "@/lib/chat/agent-tasks"
 import { closeIncompleteClinicalTags } from "@/lib/chat/clinical-tags"
 import { sourcesFromMessage } from "@/lib/chat/message-sources"
+import { audienceFromThreadMetadata } from "@/lib/chat/audience"
 import { MastraThreadTransport } from "@/lib/chat/mastra-thread-transport"
 import { getMastraClient } from "@/lib/mastra/client"
 import {
@@ -73,6 +75,7 @@ import { toolApprovalMutationOptions } from "@/lib/queries/chat"
 import { sessionQueryOptions } from "@/lib/queries/session"
 import {
   threadMessagesQueryOptions,
+  threadQueryOptions,
   threadsQueryKey,
 } from "@/lib/queries/threads"
 
@@ -244,16 +247,28 @@ function ChatPaneReady({
   pendingPrompt?: string
 }) {
   const t = useTranslations("thread")
+  const locale = useLocale() as AppLocale
   const queryClient = useQueryClient()
   const router = useRouter()
   const agentQuery = useQuery(agentQueryOptions(agentId))
+  const threadQuery = useQuery(threadQueryOptions(agentId, threadId))
+  const audience = audienceFromThreadMetadata(threadQuery.data?.metadata)
   const sentPending = useRef(false)
   const resumeStreamRef = useRef(async () => {})
   const stopRef = useRef(async () => {})
   const pendingLocalTexts = useRef<string[]>([])
+  const runContext = useRef({ audience, locale })
+  runContext.current.audience = audience
+  runContext.current.locale = locale
   const [queuedMessages, setQueuedMessages] = useState<QueueMessage[]>([])
   const transport = useMemo(
-    () => new MastraThreadTransport(agentId, threadId, resourceId),
+    () =>
+      new MastraThreadTransport(
+        agentId,
+        threadId,
+        resourceId,
+        runContext.current
+      ),
     [agentId, threadId, resourceId]
   )
 
@@ -342,11 +357,13 @@ function ChatPaneReady({
       }
       setQueuedMessages((current) => [...current, queued])
       try {
-        await getMastraClient().getAgent(agentId).queueMessage({
-          message: trimmed,
-          threadId,
-          resourceId,
-        })
+        await getMastraClient(runContext.current)
+          .getAgent(agentId)
+          .queueMessage({
+            message: trimmed,
+            threadId,
+            resourceId,
+          })
       } catch {
         setQueuedMessages((current) =>
           current.filter((message) => message.id !== queued.id)
@@ -412,7 +429,6 @@ function ChatPaneReady({
                       />
                       {isLastAssistant ? (
                         <MessageFollowUps
-                          agentId={agentId}
                           threadId={threadId}
                           messageId={message.id}
                           userText={lastUserText}

@@ -1,9 +1,8 @@
 import { describe, expect, test } from "bun:test"
 import {
   excerptForFollowUps,
+  GENERATE_FOLLOW_UPS_WORKFLOW_ID,
   promptsFromUnknown,
-  suggestedPromptJsonPromptInjection,
-  suggestedPromptRequestContext,
   uniquePrompts,
 } from "./suggested-prompts"
 
@@ -57,15 +56,9 @@ describe("uniquePrompts", () => {
   })
 })
 
-describe("suggestedPromptJsonPromptInjection", () => {
-  test("matches the HTTP generate schema", () => {
-    expect(typeof suggestedPromptJsonPromptInjection).toBe("boolean")
-  })
-})
-
-describe("suggestedPromptRequestContext", () => {
-  test("requests the fast model", () => {
-    expect(suggestedPromptRequestContext.getRaw("useFastModel")).toBe(true)
+describe("GENERATE_FOLLOW_UPS_WORKFLOW_ID", () => {
+  test("matches the Mastra workflow id", () => {
+    expect(GENERATE_FOLLOW_UPS_WORKFLOW_ID).toBe("generate-follow-ups")
   })
 })
 

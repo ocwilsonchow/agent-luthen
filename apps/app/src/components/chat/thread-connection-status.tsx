@@ -32,7 +32,7 @@ export function ThreadConnectionStatus({
   return (
     <p
       aria-live="polite"
-      className="ml-auto flex items-center gap-1.5 text-muted-foreground text-xs"
+      className="flex items-center gap-1.5 text-muted-foreground text-xs"
       role="status"
     >
       <span

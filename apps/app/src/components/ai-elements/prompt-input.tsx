@@ -853,6 +853,8 @@ export const PromptInput = ({
       // where user input during async blob conversion would be lost
       if (!usingProvider) {
         form.reset()
+      } else {
+        controller.textInput.clear()
       }
 
       try {

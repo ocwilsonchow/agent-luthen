@@ -7,7 +7,6 @@ import type { AppLocale } from "@/i18n/routing"
 import { followUpsQueryOptions } from "@/lib/queries/suggested-prompts"
 
 export function MessageFollowUps({
-  agentId,
   threadId,
   messageId,
   userText,
@@ -15,7 +14,6 @@ export function MessageFollowUps({
   disabled,
   onSelect,
 }: {
-  agentId: string
   threadId: string
   messageId: string
   userText: string
@@ -27,7 +25,6 @@ export function MessageFollowUps({
   const locale = useLocale() as AppLocale
   const followUps = useQuery(
     followUpsQueryOptions({
-      agentId,
       threadId,
       messageId,
       userText,

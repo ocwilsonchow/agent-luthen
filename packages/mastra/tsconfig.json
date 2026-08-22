@@ -14,5 +14,5 @@
     "outDir": "dist"
   },
   "include": ["src/**/*", "sst-env.d.ts"],
-  "exclude": ["node_modules", ".sst"]
+  "exclude": ["node_modules", ".sst", "**/*.test.ts"]
 }

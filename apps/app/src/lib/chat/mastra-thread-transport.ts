@@ -6,7 +6,7 @@ import {
   type MastraChunk,
   userTextFromMessage,
 } from "@/lib/chat/mastra-chunks"
-import { getMastraClient } from "@/lib/mastra/client"
+import { getMastraClient, type LuthenRunContext } from "@/lib/mastra/client"
 
 export type ThreadConnection = "connecting" | "connected" | "disconnected"
 export type ThreadDisplayStatus =
@@ -355,7 +355,8 @@ export class MastraThreadTransport implements ChatTransport<UIMessage> {
   constructor(
     private readonly agentId: string,
     private readonly threadId: string,
-    private readonly resourceId: string
+    private readonly resourceId: string,
+    private readonly runContext: LuthenRunContext = {}
   ) {}
 
   async sendMessages({
@@ -370,7 +371,7 @@ export class MastraThreadTransport implements ChatTransport<UIMessage> {
       throw new Error("No user message to send")
     }
 
-    const agent = getMastraClient().getAgent(this.agentId)
+    const agent = getMastraClient(this.runContext).getAgent(this.agentId)
     const payload = {
       message: text,
       threadId: this.threadId,

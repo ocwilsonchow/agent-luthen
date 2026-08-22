@@ -83,7 +83,7 @@ Configured in [`packages/mastra`](packages/mastra/):
 - `packages/mastra/src/mastra/index.ts` — Mastra instance: Better Auth, Postgres storage, Langfuse, Tavily tools
 - `packages/mastra/src/mastra/agents/research/agent.ts` — **Clinical Guidelines Researcher** (`clinical-research-agent`), exposed as a durable agent
 - `packages/mastra/src/mastra/models/index.ts` — models via Vercel AI Gateway (currently `deepseek/deepseek-v4-flash`)
-- `packages/mastra/src/mastra/tools/tavily-tools.ts` — Tavily search and extract
+- `packages/mastra/src/mastra/tools/` — one folder per tool (`tavily`, `drug-profile`, `schedule`)
 
 Mastra Studio (`bun run mastra:studio`) loads the same SST secrets as the API.
 
