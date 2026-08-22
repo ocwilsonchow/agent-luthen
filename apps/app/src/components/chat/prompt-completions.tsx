@@ -103,6 +103,15 @@ function PromptComposerFields({
 
   return (
     <>
+      {open ? (
+        <PromptCompletionList
+          highlight={highlight}
+          label={t("completionsLabel")}
+          matches={matches}
+          onFill={fill}
+          onHighlight={(index) => setHighlightFor({ value: input, index })}
+        />
+      ) : null}
       <PromptInput
         className={className}
         onSubmit={async ({ text }) => {
@@ -155,15 +164,6 @@ function PromptComposerFields({
           <PromptInputSubmit onStop={onStop} status={status} />
         </PromptInputFooter>
       </PromptInput>
-      {open ? (
-        <PromptCompletionList
-          highlight={highlight}
-          label={t("completionsLabel")}
-          matches={matches}
-          onFill={fill}
-          onHighlight={(index) => setHighlightFor({ value: input, index })}
-        />
-      ) : null}
     </>
   )
 }
@@ -184,7 +184,7 @@ export function PromptCompletionList({
   return (
     <ul
       aria-label={label}
-      className="mt-2 rounded-xl border bg-card p-1 shadow-sm"
+      className="mb-2 rounded-xl border bg-card p-1 shadow-sm"
       id={LIST_ID}
       role="listbox"
     >
