@@ -48,7 +48,9 @@ export function ThreadListItem({
   const clone = useMutation({
     ...cloneThreadMutationOptions,
     onSuccess: async (result) => {
-      await queryClient.invalidateQueries({ queryKey: threadsQueryKey(agentId) })
+      await queryClient.invalidateQueries({
+        queryKey: threadsQueryKey(agentId),
+      })
       if (result.thread?.id) {
         router.push(`/agents/${agentId}/${result.thread.id}`)
       }

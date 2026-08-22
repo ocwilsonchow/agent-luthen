@@ -9,8 +9,9 @@ import {
   type UIMessage,
 } from "ai"
 import { useMemo, useEffect, useRef, useState } from "react"
-import { useTranslations } from "next-intl"
+import { useLocale, useTranslations } from "next-intl"
 import { useRouter } from "@/i18n/navigation"
+import type { AppLocale } from "@/i18n/routing"
 import {
   Confirmation,
   ConfirmationAccepted,
@@ -31,13 +32,7 @@ import {
   MessageContent,
   MessageResponse,
 } from "@/components/ai-elements/message"
-import {
-  PromptInput,
-  PromptInputBody,
-  PromptInputFooter,
-  PromptInputSubmit,
-  PromptInputTextarea,
-} from "@/components/ai-elements/prompt-input"
+import { PromptComposer } from "@/components/chat/prompt-completions"
 import {
   Reasoning,
   ReasoningContent,
@@ -52,9 +47,10 @@ import {
 } from "@/components/ai-elements/tool"
 import type { QueueMessage } from "@/components/ai-elements/queue"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { AgentTaskList } from "@/components/chat/agent-task-list"
-import { assistantMedMarkdown } from "@/components/chat/med-chip"
+import { MessageFollowUps } from "@/components/chat/message-follow-ups"
+import { assistantMedMarkdown } from "@/components/chat/clinical-callout"
+import { SourceLookupProvider } from "@/components/chat/inline-source"
 import { MessageQueue } from "@/components/chat/message-queue"
 import { MessageSources } from "@/components/chat/message-sources"
 import { MessageUsage } from "@/components/chat/message-usage"
@@ -64,17 +60,22 @@ import {
   tasksFromMessages,
   hasVisibleChatParts,
 } from "@/lib/chat/agent-tasks"
-import { closeIncompleteMedTag } from "@/lib/chat/med-kind"
+import { closeIncompleteClinicalTags } from "@/lib/chat/clinical-tags"
+import { sourcesFromMessage } from "@/lib/chat/message-sources"
+import { audienceFromThreadMetadata } from "@/lib/chat/audience"
 import { MastraThreadTransport } from "@/lib/chat/mastra-thread-transport"
 import { getMastraClient } from "@/lib/mastra/client"
-import { userMessageFromData } from "@/lib/chat/mastra-chunks"
+import {
+  userMessageFromData,
+  userTextFromMessage,
+} from "@/lib/chat/mastra-chunks"
 import { toUiMessages } from "@/lib/chat/to-ui-messages"
-import { suggestedPromptsFromAgent } from "@/lib/mastra/agent"
 import { agentQueryOptions } from "@/lib/queries/agents"
 import { toolApprovalMutationOptions } from "@/lib/queries/chat"
 import { sessionQueryOptions } from "@/lib/queries/session"
 import {
   threadMessagesQueryOptions,
+  threadQueryOptions,
   threadsQueryKey,
 } from "@/lib/queries/threads"
 
@@ -95,16 +96,19 @@ function MessageParts({
 }) {
   const t = useTranslations("chat")
   const approval = useMutation(toolApprovalMutationOptions)
+  const sources = useMemo(() => sourcesFromMessage(message), [message])
 
   return (
-    <>
+    <SourceLookupProvider sources={sources}>
       {message.parts.map((part, index) => {
         if (part.type === "text") {
           const isAssistant = message.role === "assistant"
           return (
             <MessageContent key={`${message.id}-text-${index}`}>
               <MessageResponse {...(isAssistant ? assistantMedMarkdown : {})}>
-                {isAssistant ? closeIncompleteMedTag(part.text) : part.text}
+                {isAssistant
+                  ? closeIncompleteClinicalTags(part.text)
+                  : part.text}
               </MessageResponse>
             </MessageContent>
           )
@@ -193,7 +197,7 @@ function MessageParts({
       })}
       <MessageSources message={message} />
       <MessageUsage message={message} modelId={modelId} provider={provider} />
-    </>
+    </SourceLookupProvider>
   )
 }
 
@@ -243,17 +247,28 @@ function ChatPaneReady({
   pendingPrompt?: string
 }) {
   const t = useTranslations("thread")
+  const locale = useLocale() as AppLocale
   const queryClient = useQueryClient()
   const router = useRouter()
   const agentQuery = useQuery(agentQueryOptions(agentId))
-  const prompts = suggestedPromptsFromAgent(agentQuery.data)
+  const threadQuery = useQuery(threadQueryOptions(agentId, threadId))
+  const audience = audienceFromThreadMetadata(threadQuery.data?.metadata)
   const sentPending = useRef(false)
   const resumeStreamRef = useRef(async () => {})
   const stopRef = useRef(async () => {})
   const pendingLocalTexts = useRef<string[]>([])
+  const runContext = useRef({ audience, locale })
+  runContext.current.audience = audience
+  runContext.current.locale = locale
   const [queuedMessages, setQueuedMessages] = useState<QueueMessage[]>([])
   const transport = useMemo(
-    () => new MastraThreadTransport(agentId, threadId, resourceId),
+    () =>
+      new MastraThreadTransport(
+        agentId,
+        threadId,
+        resourceId,
+        runContext.current
+      ),
     [agentId, threadId, resourceId]
   )
 
@@ -342,11 +357,13 @@ function ChatPaneReady({
       }
       setQueuedMessages((current) => [...current, queued])
       try {
-        await getMastraClient().getAgent(agentId).queueMessage({
-          message: trimmed,
-          threadId,
-          resourceId,
-        })
+        await getMastraClient(runContext.current)
+          .getAgent(agentId)
+          .queueMessage({
+            message: trimmed,
+            threadId,
+            resourceId,
+          })
       } catch {
         setQueuedMessages((current) =>
           current.filter((message) => message.id !== queued.id)
@@ -374,69 +391,70 @@ function ChatPaneReady({
   }, [agentId, pendingPrompt, router, sendMessage, threadId])
 
   const tasks = useMemo(() => tasksFromMessages(messages), [messages])
+  const lastVisible = visibleMessages.at(-1)
+  const lastUserText = useMemo(() => {
+    for (let index = visibleMessages.length - 1; index >= 0; index -= 1) {
+      const message = visibleMessages[index]
+      if (message?.role === "user") return userTextFromMessage(message)
+    }
+    return ""
+  }, [visibleMessages])
 
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
-      <div className="mx-auto flex min-h-0 w-full max-w-prose flex-1 flex-col">
-        <AgentTaskList tasks={tasks} />
+      <div className="flex min-h-0 w-full flex-1 flex-col">
         <Conversation className="min-h-0">
           <ConversationContent>
             {visibleMessages.length === 0 && !showThinking ? (
               <ConversationEmptyState
                 title={t("emptyTitle")}
                 description={t("emptyDescription")}
-              >
-                {prompts.length > 0 ? (
-                  <div className="flex flex-wrap justify-center gap-2">
-                    {prompts.map((prompt) => (
-                      <Button
-                        key={prompt}
-                        size="sm"
-                        variant="outline"
-                        onClick={() => void submitPrompt(prompt)}
-                      >
-                        {prompt}
-                      </Button>
-                    ))}
-                  </div>
-                ) : null}
-              </ConversationEmptyState>
+              />
             ) : (
               <>
-                {visibleMessages.map((message) => (
-                  <Message from={message.role} key={message.id}>
-                    <MessageParts
-                      message={message}
-                      agentId={agentId}
-                      threadId={threadId}
-                      resourceId={resourceId}
-                      modelId={agentQuery.data?.modelId}
-                      provider={agentQuery.data?.provider}
-                    />
-                  </Message>
-                ))}
+                {visibleMessages.map((message) => {
+                  const isLastAssistant =
+                    message.role === "assistant" &&
+                    message.id === lastVisible?.id &&
+                    !isBusy
+                  return (
+                    <Message from={message.role} key={message.id}>
+                      <MessageParts
+                        message={message}
+                        agentId={agentId}
+                        threadId={threadId}
+                        resourceId={resourceId}
+                        modelId={agentQuery.data?.modelId}
+                        provider={agentQuery.data?.provider}
+                      />
+                      {isLastAssistant ? (
+                        <MessageFollowUps
+                          threadId={threadId}
+                          messageId={message.id}
+                          userText={lastUserText}
+                          assistantText={userTextFromMessage(message)}
+                          onSelect={submitPrompt}
+                        />
+                      ) : null}
+                    </Message>
+                  )
+                })}
                 {showThinking ? <ThinkingIndicator /> : null}
               </>
             )}
           </ConversationContent>
           <ConversationScrollButton />
         </Conversation>
-        <div className="shrink-0 border-t bg-background p-3">
+        <div className="mx-auto w-full max-w-prose shrink-0 border-t bg-background py-3">
+          <AgentTaskList tasks={tasks} />
           <MessageQueue label={t("queued")} messages={queuedMessages} />
-          <PromptInput
+          <PromptComposer
             className={queuedMessages.length > 0 ? "rounded-t-none" : undefined}
-            onSubmit={async ({ text }) => {
-              if (!text?.trim()) return
-              await submitPrompt(text)
-            }}
-          >
-            <PromptInputBody>
-              <PromptInputTextarea placeholder={t("promptPlaceholder")} />
-            </PromptInputBody>
-            <PromptInputFooter>
-              <PromptInputSubmit onStop={stop} status={status} />
-            </PromptInputFooter>
-          </PromptInput>
+            placeholder={t("promptPlaceholder")}
+            status={status}
+            onStop={stop}
+            onSubmit={submitPrompt}
+          />
         </div>
       </div>
     </div>

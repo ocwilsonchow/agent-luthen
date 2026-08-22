@@ -30,7 +30,10 @@ import {
 import { useRouter } from "@/i18n/navigation"
 import { agentHttpId } from "@/lib/mastra/agent"
 import { agentsQueryOptions } from "@/lib/queries/agents"
-import { sessionQueryOptions, signOutMutationOptions } from "@/lib/queries/session"
+import {
+  sessionQueryOptions,
+  signOutMutationOptions,
+} from "@/lib/queries/session"
 import {
   createThreadMutationOptions,
   threadsQueryKey,
@@ -57,7 +60,9 @@ export function AppSidebar({
     ...createThreadMutationOptions,
     onSuccess: async (thread) => {
       if (!agentId) return
-      await queryClient.invalidateQueries({ queryKey: threadsQueryKey(agentId) })
+      await queryClient.invalidateQueries({
+        queryKey: threadsQueryKey(agentId),
+      })
       router.push(`/agents/${agentId}/${thread.id}`)
     },
   })
@@ -145,11 +150,7 @@ export function AppSidebar({
         <LocaleSwitcher />
         <div className="flex items-center gap-1">
           <ThemeToggle />
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => signOut.mutate()}
-          >
+          <Button size="sm" variant="ghost" onClick={() => signOut.mutate()}>
             {t("signOut")}
           </Button>
         </div>

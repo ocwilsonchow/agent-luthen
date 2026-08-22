@@ -7,12 +7,10 @@ export const abortThreadMutationOptions = mutationOptions({
     threadId: string
     resourceId?: string
   }) => {
-    return getMastraClient()
-      .getAgent(input.agentId)
-      .abortThread({
-        threadId: input.threadId,
-        resourceId: input.resourceId,
-      })
+    return getMastraClient().getAgent(input.agentId).abortThread({
+      threadId: input.threadId,
+      resourceId: input.resourceId,
+    })
   },
 })
 

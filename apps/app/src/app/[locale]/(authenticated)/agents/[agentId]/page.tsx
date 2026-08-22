@@ -10,7 +10,7 @@ export default async function AgentPage({
 
   return (
     <AppShell agentId={agentId}>
-      <AgentEmptyState agentId={agentId} />
+      <AgentEmptyState />
     </AppShell>
   )
 }

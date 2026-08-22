@@ -42,7 +42,9 @@ export function RenameThreadDialog({
   const rename = useMutation({
     ...renameThreadMutationOptions,
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: threadsQueryKey(agentId) })
+      await queryClient.invalidateQueries({
+        queryKey: threadsQueryKey(agentId),
+      })
       onOpenChange(false)
     },
   })
@@ -84,7 +86,11 @@ export function RenameThreadDialog({
             )}
           </form.Field>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
               {t("cancel")}
             </Button>
             <Button disabled={rename.isPending} type="submit">

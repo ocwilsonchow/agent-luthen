@@ -5,15 +5,11 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import {
-  MED_ALLOWED_TAGS,
-  MED_LITERAL_TAG_CONTENT,
-  parseMedKind,
-} from "@/lib/chat/med-kind"
+import { parseMedKind } from "@/lib/chat/med-kind"
 import { cn } from "@/lib/utils"
 import { useTranslations } from "next-intl"
 import type { ReactNode } from "react"
-import type { ExtraProps, StreamdownProps } from "streamdown"
+import type { ExtraProps } from "streamdown"
 
 export function MedChip({
   kind,
@@ -57,12 +53,3 @@ export function MedChip({
     </Tooltip>
   )
 }
-
-export const assistantMedMarkdown = {
-  allowedTags: MED_ALLOWED_TAGS,
-  literalTagContent: MED_LITERAL_TAG_CONTENT,
-  components: { med: MedChip },
-} satisfies Pick<
-  StreamdownProps,
-  "allowedTags" | "literalTagContent" | "components"
->

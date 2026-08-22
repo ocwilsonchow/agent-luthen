@@ -66,7 +66,9 @@ function UsageBreakdown({
       {rows.map((row) => (
         <div key={row.key} className="contents">
           <span>{t(row.label)}</span>
-          <span className="tabular-nums">{formatTokens(format, row.value)}</span>
+          <span className="tabular-nums">
+            {formatTokens(format, row.value)}
+          </span>
           <span className="text-right tabular-nums">
             {row.usd != null ? formatUsd(format, row.usd) : ""}
           </span>
@@ -99,7 +101,7 @@ export function MessageUsage({
   const streamedModelId = modelIdFromMessage(message)
   const modelId = streamedModelId?.includes("/")
     ? streamedModelId
-    : fallbackModelId ?? streamedModelId
+    : (fallbackModelId ?? streamedModelId)
   const provider = (fallbackProvider || "vercel").toLowerCase()
   const usage = usageFromMessage(message)
   const catalogQuery = useQuery({

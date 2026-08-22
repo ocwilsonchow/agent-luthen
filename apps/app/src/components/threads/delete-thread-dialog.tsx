@@ -36,7 +36,9 @@ export function DeleteThreadDialog({
   const remove = useMutation({
     ...deleteThreadMutationOptions,
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: threadsQueryKey(agentId) })
+      await queryClient.invalidateQueries({
+        queryKey: threadsQueryKey(agentId),
+      })
       onOpenChange(false)
       if (isCurrent) {
         router.replace(`/agents/${agentId}`)
@@ -52,15 +54,17 @@ export function DeleteThreadDialog({
           <DialogDescription>{t("deleteDescription")}</DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+          >
             {t("cancel")}
           </Button>
           <Button
             disabled={remove.isPending}
             variant="destructive"
-            onClick={() =>
-              remove.mutate({ agentId, threadId })
-            }
+            onClick={() => remove.mutate({ agentId, threadId })}
           >
             {t("deleteConfirm")}
           </Button>

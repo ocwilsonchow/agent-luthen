@@ -52,6 +52,7 @@ describe("sourcesFromMessage", () => {
                     {
                       title: "NICE",
                       url: "https://nice.org.uk/metformin",
+                      content: "Metformin is first-line for type 2 diabetes.",
                     },
                     {
                       title: "ADA",
@@ -72,6 +73,7 @@ describe("sourcesFromMessage", () => {
         id: "https://nice.org.uk/metformin",
         href: "https://nice.org.uk/metformin",
         title: "NICE",
+        snippet: "Metformin is first-line for type 2 diabetes.",
       },
       {
         id: "https://diabetes.org/metformin",
@@ -113,6 +115,45 @@ describe("sourcesFromMessage", () => {
         id: "https://nice.org.uk/metformin",
         href: "https://nice.org.uk/metformin",
         title: "NICE",
+      },
+    ])
+  })
+
+  test("fills in a snippet when a later part repeats the url", () => {
+    const message: UIMessage = {
+      id: "a1",
+      role: "assistant",
+      parts: [
+        {
+          type: "source-url",
+          sourceId: "s1",
+          url: "https://nice.org.uk/metformin",
+          title: "https://nice.org.uk/metformin",
+        },
+        {
+          type: "tool-tavily-search",
+          toolCallId: "call_search",
+          state: "output-available",
+          input: { query: "metformin" },
+          output: {
+            results: [
+              {
+                title: "NICE NG28",
+                url: "https://nice.org.uk/metformin",
+                rawContent: "Offer metformin as first-line drug treatment.",
+              },
+            ],
+          },
+        },
+      ],
+    }
+
+    expect(sourcesFromMessage(message)).toEqual([
+      {
+        id: "https://nice.org.uk/metformin",
+        href: "https://nice.org.uk/metformin",
+        title: "NICE NG28",
+        snippet: "Offer metformin as first-line drug treatment.",
       },
     ])
   })

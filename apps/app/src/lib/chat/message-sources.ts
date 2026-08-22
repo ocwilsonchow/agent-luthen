@@ -5,6 +5,7 @@ export type ChatSource = {
   id: string
   href: string
   title: string
+  snippet?: string
 }
 
 export function hostnameFromHref(href: string) {
@@ -15,14 +16,16 @@ export function hostnameFromHref(href: string) {
   }
 }
 
+function titleLooksLikeUrl(title: string, href: string) {
+  return !title || title === href || /^https?:\/\//i.test(title)
+}
+
 export function sourceDisplay(source: ChatSource) {
   const hostname = hostnameFromHref(source.href)
-  const titleLooksLikeUrl =
-    !source.title ||
-    source.title === source.href ||
-    /^https?:\/\//i.test(source.title)
   return {
-    title: titleLooksLikeUrl ? hostname : source.title,
+    title: titleLooksLikeUrl(source.title, source.href)
+      ? hostname
+      : source.title,
     hostname,
   }
 }
@@ -53,31 +56,59 @@ function resultItems(output: unknown): unknown[] {
   return []
 }
 
-function sourceFromUrl(url: unknown, title: unknown): ChatSource | null {
+function snippetFromUnknown(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined
+  const trimmed = value.trim()
+  return trimmed ? trimmed : undefined
+}
+
+function sourceFromUrl(
+  url: unknown,
+  title: unknown,
+  snippet?: unknown
+): ChatSource | null {
   if (typeof url !== "string") return null
   const href = url.trim()
   if (!/^https?:\/\//i.test(href)) return null
-  const label =
-    typeof title === "string" && title.trim() ? title.trim() : href
-  return { id: href, href, title: label }
+  const label = typeof title === "string" && title.trim() ? title.trim() : href
+  const text = snippetFromUnknown(snippet)
+  return text
+    ? { id: href, href, title: label, snippet: text }
+    : { id: href, href, title: label }
+}
+
+function mergeSource(existing: ChatSource, incoming: ChatSource): ChatSource {
+  const existingTitleWeak = titleLooksLikeUrl(existing.title, existing.href)
+  const incomingTitleStrong = !titleLooksLikeUrl(incoming.title, incoming.href)
+  return {
+    id: existing.id,
+    href: existing.href,
+    title:
+      existingTitleWeak && incomingTitleStrong
+        ? incoming.title
+        : existing.title,
+    snippet: existing.snippet ?? incoming.snippet,
+  }
 }
 
 function sourcesFromOutput(output: unknown): ChatSource[] {
   return resultItems(output).flatMap((item) => {
     if (!isRecord(item)) return []
-    const source = sourceFromUrl(item.url, item.title)
+    const source = sourceFromUrl(
+      item.url,
+      item.title,
+      item.content ?? item.rawContent
+    )
     return source ? [source] : []
   })
 }
 
 export function sourcesFromMessage(message: UIMessage): ChatSource[] {
-  const seen = new Set<string>()
-  const sources: ChatSource[] = []
+  const byHref = new Map<string, ChatSource>()
 
   const add = (source: ChatSource) => {
-    if (seen.has(source.href)) return
-    seen.add(source.href)
-    sources.push(source)
+    const existing = byHref.get(source.href)
+    byHref.set(source.href, existing ? mergeSource(existing, source) : source)
   }
 
   for (const part of message.parts) {
@@ -90,5 +121,5 @@ export function sourcesFromMessage(message: UIMessage): ChatSource[] {
     for (const source of sourcesFromOutput(part.output)) add(source)
   }
 
-  return sources
+  return [...byHref.values()]
 }

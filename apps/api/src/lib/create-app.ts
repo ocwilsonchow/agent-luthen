@@ -18,6 +18,13 @@ export async function createApp() {
         `https://${Resource.App.stage}.api.${domain}`,
       ],
       credentials: true,
+      allowHeaders: [
+        "Content-Type",
+        "Authorization",
+        "Cookie",
+        "x-luthen-audience",
+        "x-luthen-locale",
+      ],
     })
   )
   app.use(requestId())

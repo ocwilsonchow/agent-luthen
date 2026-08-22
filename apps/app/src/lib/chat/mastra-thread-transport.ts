@@ -6,14 +6,11 @@ import {
   type MastraChunk,
   userTextFromMessage,
 } from "@/lib/chat/mastra-chunks"
-import { getMastraClient } from "@/lib/mastra/client"
+import { getMastraClient, type LuthenRunContext } from "@/lib/mastra/client"
 
 export type ThreadConnection = "connecting" | "connected" | "disconnected"
 export type ThreadDisplayStatus =
-  | "connecting"
-  | "connected"
-  | "disconnected"
-  | "streaming"
+  "connecting" | "connected" | "disconnected" | "streaming"
 
 export type ThreadHubSnapshot = {
   connection: ThreadConnection
@@ -329,7 +326,9 @@ function waitForTurnStream(
       if (settled || hub.enqueueStreams > 0) return
       if (chunk) {
         if (isRunStartChunk(chunk) || !isTerminalMastraChunk(chunk)) {
-          finish(chunksToUiStream(hub, abortSignal, { abortRun, enqueue: true }))
+          finish(
+            chunksToUiStream(hub, abortSignal, { abortRun, enqueue: true })
+          )
         }
         return
       }
@@ -356,7 +355,8 @@ export class MastraThreadTransport implements ChatTransport<UIMessage> {
   constructor(
     private readonly agentId: string,
     private readonly threadId: string,
-    private readonly resourceId: string
+    private readonly resourceId: string,
+    private readonly runContext: LuthenRunContext = {}
   ) {}
 
   async sendMessages({
@@ -371,7 +371,7 @@ export class MastraThreadTransport implements ChatTransport<UIMessage> {
       throw new Error("No user message to send")
     }
 
-    const agent = getMastraClient().getAgent(this.agentId)
+    const agent = getMastraClient(this.runContext).getAgent(this.agentId)
     const payload = {
       message: text,
       threadId: this.threadId,
